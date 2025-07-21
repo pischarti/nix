@@ -14,15 +14,31 @@
       forAllSystems = f: genAttrs supportedSystems (system: f system);
     in {
       devShells = forAllSystems (system:
-        let pkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
+        let pkgs = import nixpkgs { 
+          inherit system; 
+          config.allowUnfree = true; 
+        };
         in {
           default = pkgs.mkShell {
-            buildInputs = [
-              pkgs.hello
-              pkgs.zarf
-              pkgs.helm
-              pkgs.fluxcd
-              pkgs.kustomize_4              
+            buildInputs = with pkgs; [
+              hello
+              cowsay
+              lolcat
+              
+              zarf
+              kubernetes-helm
+              fluxcd
+              kustomize_4
+                        
+              nodejs
+              pnpm_8
+          
+              go
+              python314
+              
+              jq
+              git
+              gh
             ];
           };
         });
