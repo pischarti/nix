@@ -39,6 +39,8 @@
               jq
               git
               gh
+              neovim
+              xclip
             ];
           };
         });
