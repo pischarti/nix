@@ -35,7 +35,10 @@
           
               go
               python314
-              
+
+              pulumi
+              terraform
+
               jq
               git
               gh
