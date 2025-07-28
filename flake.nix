@@ -35,6 +35,7 @@
           
               go
               python314
+              uv
 
               pulumi
               terraform
