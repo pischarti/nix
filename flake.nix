@@ -37,6 +37,10 @@
               python314
               uv
 
+              awscli2
+              azure-cli
+              google-cloud-sdk
+
               pulumi
               terraform
 
