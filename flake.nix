@@ -34,6 +34,9 @@
               pnpm_8
           
               go
+
+              php-with-extensions
+
               python314
               uv
 
