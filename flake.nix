@@ -35,7 +35,7 @@
           
               go
 
-              php-with-extensions
+              php
 
               python314
               uv
