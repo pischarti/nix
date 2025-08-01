@@ -25,10 +25,16 @@
               cowsay
               lolcat
 
+              docker
               podman
               podman-tui
               podman-desktop
               
+              kind
+              k3s
+              k3d
+              rke2
+
               zarf
               kubernetes-helm
               fluxcd
