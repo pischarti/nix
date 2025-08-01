@@ -24,6 +24,10 @@
               hello
               cowsay
               lolcat
+
+              podman
+              podman-tui
+              
               
               zarf
               kubernetes-helm
