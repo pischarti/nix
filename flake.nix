@@ -25,6 +25,8 @@
               cowsay
               lolcat
 
+              qemu
+              
               docker
               podman
               podman-tui
