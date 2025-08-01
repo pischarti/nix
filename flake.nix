@@ -27,7 +27,7 @@
 
               podman
               podman-tui
-              
+              podman-desktop
               
               zarf
               kubernetes-helm
