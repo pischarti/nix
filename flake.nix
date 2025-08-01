@@ -26,6 +26,7 @@
               lolcat
 
               qemu
+              virtiofsd
               
               docker
               podman
