@@ -29,6 +29,8 @@
               kubernetes-helm
               fluxcd
               kustomize_4
+              kubelogin
+              kubetui
                         
               nodejs
               pnpm_8
