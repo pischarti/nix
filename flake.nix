@@ -34,7 +34,6 @@
               
               kind
               k3d
-              rke2
 
               zarf
               kubernetes-helm
