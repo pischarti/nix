@@ -33,7 +33,6 @@
               podman-desktop
               
               kind
-              k3s
               k3d
               rke2
 
