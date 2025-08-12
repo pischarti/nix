@@ -30,7 +30,6 @@
               docker
               podman
               podman-tui
-              podman-desktop
               
               kind
               k3d
