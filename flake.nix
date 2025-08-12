@@ -81,6 +81,7 @@
               gh
               neovim
               xclip
+              certbot
             ];
           };
         });
