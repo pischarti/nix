@@ -73,7 +73,6 @@
               google-cloud-sdk
 
               pulumi
-              terraform
 
               jq
               git
