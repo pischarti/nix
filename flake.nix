@@ -69,6 +69,8 @@
               uv
 
               awscli2
+              ssm-session-manager-plugin
+
               azure-cli
               google-cloud-sdk
 
