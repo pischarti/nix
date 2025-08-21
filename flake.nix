@@ -60,6 +60,7 @@
                         
               nodejs
               pnpm_8
+              supabase-cli
           
               go
 
