@@ -33,6 +33,7 @@
               
               kind
               k3d
+              k9s
 
               zarf
               kubernetes-helm
