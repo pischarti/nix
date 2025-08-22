@@ -87,6 +87,7 @@
               certbot
               python313Packages.certbot-dns-route53
               kratos
+              ory
             ];
           };
         });
