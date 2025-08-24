@@ -25,6 +25,8 @@
               cowsay
               lolcat
 
+              ungit
+
               qemu
               
               docker
@@ -88,6 +90,8 @@
               python313Packages.certbot-dns-route53
               kratos
               ory
+              
+              codex
             ];
           };
         });
