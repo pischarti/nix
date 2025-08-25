@@ -24,42 +24,6 @@
               hello
               cowsay
               lolcat
-
-              ungit
-
-              qemu
-              
-              docker
-              podman
-              podman-tui
-              
-              kind
-              k3d
-              k9s
-
-              zarf
-              kubernetes-helm
-              fluxcd
-              kustomize_4
-              kubelogin
-              kubetui
-              kubent
-              kubecm
-              kubexit
-              kubepug
-              kubefwd
-              kubectx
-              kubectl
-              kubetail
-              kubeseal
-              kubeshark
-              kubeswitch
-              kubebuilder
-              kubectl-ktop
-              kubectl-graph
-              kube-capacity
-              kubectl-images
-              kubemq-community 
                         
               nodejs
               pnpm_8
@@ -71,27 +35,6 @@
 
               python314
               uv
-
-              awscli2
-              ssm-session-manager-plugin
-
-              azure-cli
-              google-cloud-sdk
-
-              pulumi
-
-              jq
-              git
-              gh
-              neovim
-              xclip
-              
-              certbot
-              python313Packages.certbot-dns-route53
-              kratos
-              ory
-              
-              codex
             ];
           };
         });
