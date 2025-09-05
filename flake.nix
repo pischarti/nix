@@ -34,7 +34,10 @@
 
               php
 
-              python314
+              python313
+              python313Packages.uvicorn
+              python313Packages.fastapi
+              python313Packages.pydantic
               uv
             ];
           };

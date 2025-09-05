@@ -1,4 +1,6 @@
 pandas
 matplotlib
 sqlalchemy
-
+fastapi
+pydantic
+uvicorn
