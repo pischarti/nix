@@ -24,6 +24,7 @@
               hello
               cowsay
               lolcat
+              git
                         
               nodejs
               pnpm_8
