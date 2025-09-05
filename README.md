@@ -34,11 +34,24 @@ python ./sql/drop_db.py ./py --yes
   - Deletes only with `--yes`
   - Prints a summary and any failures
 
+## Unit tests for drop_db.py
+
+- Coverage:
+  - Find `.db` files (single/multiple extensions, case-insensitive)
+  - Deletion behavior
+  - CLI dry-run vs `--yes`
+  - `--ext` filtering
+
+- Run tests:
+```sh
+python3 -m unittest -v py/sql/tests/test_drop_db.py
+```
+
 ## Run with uv
 
-Dependencies are listed in example `py/panda/requirements.txt`.
+Dependencies are listed in example `requirements.txt`.
 
-1. Install uv (macOS):
+1. Install uv (macOS if don't have nix):
 ```sh
 brew install uv
 ```
@@ -55,7 +68,7 @@ source .venv/bin/activate
 
 4. Install dependencies:
 ```sh
-uv pip install -r py/panda/requirements.txt
+uv pip install -r requirements.txt
 ```
 
 5. Run the script:
