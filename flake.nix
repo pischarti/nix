@@ -38,6 +38,7 @@
               python313Packages.uvicorn
               python313Packages.fastapi
               python313Packages.pydantic
+              python313Packages.httpx
               uv
             ];
           };

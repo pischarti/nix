@@ -1,15 +1,16 @@
 from fastapi import Depends, FastAPI, HTTPException, Header, BackgroundTasks
-from typing import Dict, Annotated
+from typing import Dict, Annotated, Optional
 from pydantic import BaseModel
+import time
 
 app = FastAPI(title="HelloWorld API")
 
 # 1. Define a Pydantic model for the item data
 class Item(BaseModel):
     name: str
-    description: str | None = None
+    description: Optional[str] = None
     price: float
-    tax: float | None = None
+    tax: Optional[float] = None
 
 # 2. Use the model as a parameter in a POST endpoint
 @app.post("/items/")
@@ -44,11 +45,11 @@ def user_signup(email: str, background_tasks: BackgroundTasks):
     return {"message": f"User {email} signed up. Sending welcome email..."}
 
 # 1. Define a dependency function that requires an API key header
-def get_api_key(x_api_key: Annotated[str, Header()]):
+def get_api_key(x_api_key: Annotated[Optional[str], Header()] = None):
     """
     Authenticates requests using the 'X-API-Key' header.
     """
-    if x_api_key != "SECRET_API_KEY": # Replace with actual key lookup
+    if not x_api_key or x_api_key != "SECRET_API_KEY": # Replace with actual key lookup
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return x_api_key
 
