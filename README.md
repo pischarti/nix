@@ -1,4 +1,4 @@
-# nix
+# nix and other system programming learning
 
 ## Nix Installation
 
