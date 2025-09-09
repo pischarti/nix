@@ -122,24 +122,10 @@ resource "aws_instance" "edge_public" {
   user_data = <<-EOF
               #!/bin/bash
               set -euxo pipefail
-              yum update -y
-              yum install -y httpd jq
-              systemctl enable httpd
-              INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-              LOCAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-              HOSTNAME=$(hostname)
-              cat > /var/www/html/index.html <<HTML
-              <html>
-              <head><title>Edge Instance</title></head>
-              <body>
-              <h1>Edge EC2 Instance</h1>
-              <p><b>Hostname:</b> ${HOSTNAME}</p>
-              <p><b>Instance ID:</b> ${INSTANCE_ID}</p>
-              <p><b>Local IP:</b> ${LOCAL_IP}</p>
-              </body>
-              </html>
-              HTML
-              systemctl start httpd
+              yes | sudo apt update
+              yes | sudo apt install apache2
+              echo "<h1>Server details</h1><p>Hostname: $(hostname)</p><p>Local IP: $(hostname | cut -d" " -f1)</p>" | sudo tee /var/www/html/index.html
+              sudo systemctl restart apache2
               EOF
 
   tags = merge(

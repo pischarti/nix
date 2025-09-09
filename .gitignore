@@ -6,3 +6,5 @@ result-*
 .direnv
 *.db
 __pycache__
+tf/tgw/terraform.tfstate
+.terraform
