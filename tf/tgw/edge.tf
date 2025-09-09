@@ -118,43 +118,17 @@ resource "aws_instance" "edge_public" {
   vpc_security_group_ids      = [aws_security_group.edge_public_ssh.id]
   associate_public_ip_address = true
   key_name                    = coalesce(var.edge_key_name, aws_key_pair.edge_generated.key_name)
+  user_data_replace_on_change = true
 
   user_data = <<-EOF
               #!/bin/bash
               set -euxo pipefail
-              # Install Apache depending on distro
-              if command -v apt-get >/dev/null 2>&1; then
-                export DEBIAN_FRONTEND=noninteractive
-                apt-get update -y
-                apt-get install -y apache2
-                systemctl enable apache2
-                SVC=apache2
-                DOCROOT=/var/www/html
-              else
-                yum update -y || true
-                yum install -y httpd
-                systemctl enable httpd
-                SVC=httpd
-                DOCROOT=/var/www/html
-              fi
-
-              HOSTNAME=$(hostname)
-              LOCAL_IP=$(hostname | cut -d ' ' -f1)
-              INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id || echo unknown)
-
-              cat > "$DOCROOT/index.html" <<HTML
-              <html>
-              <head><title>Edge Instance</title></head>
-              <body>
-              <h1>Edge EC2 Instance</h1>
-              <p><b>Hostname:</b> $HOSTNAME</p>
-              <p><b>Instance ID:</b> $INSTANCE_ID</p>
-              <p><b>Local IP:</b> $LOCAL_IP</p>
-              </body>
-              </html>
-              HTML
-
-              systemctl restart "$SVC"
+              sudo yum update -y || true
+              sudo yum install -y httpd
+              systemctl enable httpd
+              SVC=httpd
+              echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p>" | sudo tee /var/www/html/index.html           
+              sudo systemctl restart "$SVC"
               EOF
 
   tags = merge(
@@ -163,6 +137,10 @@ resource "aws_instance" "edge_public" {
     },
     var.tags
   )
+
+  depends_on = [
+    aws_route_table_association.edge_public
+  ]
 }
 
 resource "tls_private_key" "edge" {
