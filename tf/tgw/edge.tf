@@ -1,0 +1,161 @@
+resource "aws_vpc" "edge" {
+  cidr_block           = var.vpc_cidr_space
+  enable_dns_hostnames = var.enable_dns_hostnames
+  enable_dns_support   = var.enable_dns_support
+
+  tags = merge(
+    {
+      Name = var.edge_vpc_name
+    },
+    var.tags
+  )
+}
+
+resource "aws_internet_gateway" "edge" {
+  vpc_id = aws_vpc.edge.id
+
+  tags = merge(
+    {
+      Name = "${var.edge_vpc_name}-igw"
+    },
+    var.tags
+  )
+}
+
+resource "aws_subnet" "edge_public" {
+  vpc_id                  = aws_vpc.edge.id
+  cidr_block              = var.edge_public_subnet_cidr
+  map_public_ip_on_launch = true
+
+  tags = merge(
+    {
+      Name = "${var.edge_vpc_name}-public-subnet"
+    },
+    var.tags
+  )
+}
+
+resource "aws_route_table" "edge_public" {
+  vpc_id = aws_vpc.edge.id
+
+  tags = merge(
+    {
+      Name = "${var.edge_vpc_name}-public-rt"
+    },
+    var.tags
+  )
+}
+
+resource "aws_route" "edge_public_internet_access" {
+  route_table_id         = aws_route_table.edge_public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.edge.id
+}
+
+resource "aws_route_table_association" "edge_public" {
+  subnet_id      = aws_subnet.edge_public.id
+  route_table_id = aws_route_table.edge_public.id
+}
+
+resource "aws_security_group" "edge_public_ssh" {
+  name        = "${var.edge_vpc_name}-public-ssh-sg"
+  description = "Allow SSH and egress to internet"
+  vpc_id      = aws_vpc.edge.id
+
+  ingress {
+    description      = "SSH from allowed CIDR"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = [var.edge_ssh_ingress_cidr]
+    ipv6_cidr_blocks = []
+  }
+
+  ingress {
+    description      = "HTTP from anywhere"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = merge(
+    {
+      Name = "${var.edge_vpc_name}-public-ssh-sg"
+    },
+    var.tags
+  )
+}
+
+data "aws_ami" "amazon_linux_2" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+resource "aws_instance" "edge_public" {
+  ami                         = data.aws_ami.amazon_linux_2.id
+  instance_type               = var.edge_instance_type
+  subnet_id                   = aws_subnet.edge_public.id
+  vpc_security_group_ids      = [aws_security_group.edge_public_ssh.id]
+  associate_public_ip_address = true
+  key_name                    = coalesce(var.edge_key_name, aws_key_pair.edge_generated.key_name)
+
+  user_data = <<-EOF
+              #!/bin/bash
+              set -euxo pipefail
+              yum update -y
+              yum install -y httpd jq
+              systemctl enable httpd
+              INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              LOCAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+              HOSTNAME=$(hostname)
+              cat > /var/www/html/index.html <<HTML
+              <html>
+              <head><title>Edge Instance</title></head>
+              <body>
+              <h1>Edge EC2 Instance</h1>
+              <p><b>Hostname:</b> ${HOSTNAME}</p>
+              <p><b>Instance ID:</b> ${INSTANCE_ID}</p>
+              <p><b>Local IP:</b> ${LOCAL_IP}</p>
+              </body>
+              </html>
+              HTML
+              systemctl start httpd
+              EOF
+
+  tags = merge(
+    {
+      Name = "${var.edge_vpc_name}-public-ec2"
+    },
+    var.tags
+  )
+}
+
+resource "tls_private_key" "edge" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "edge_generated" {
+  key_name   = "${var.edge_vpc_name}-generated"
+  public_key = tls_private_key.edge.public_key_openssh
+}
