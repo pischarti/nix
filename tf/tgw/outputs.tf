@@ -40,6 +40,11 @@ output "edge_public_instance_public_ip" {
   value       = aws_instance.edge_public.public_ip
 }
 
+output "edge_public_instance_private_ip" {
+  description = "The private IP of the EC2 instance in the edge public subnet"
+  value       = aws_instance.edge_public.private_ip
+}
+
 output "edge_generated_key_pair_name" {
   description = "Name of the generated EC2 key pair"
   value       = aws_key_pair.edge_generated.key_name
@@ -93,6 +98,11 @@ output "inspection_public_instance_public_ip" {
   value       = aws_instance.inspection_public.public_ip
 }
 
+output "inspection_public_instance_private_ip" {
+  description = "The private IP of the EC2 instance in the inspection public subnet"
+  value       = aws_instance.inspection_public.private_ip
+}
+
 # App VPC Outputs
 output "app_vpc_id" {
   description = "The ID of the app VPC"
@@ -107,6 +117,11 @@ output "app_public_instance_id" {
 output "app_public_instance_public_ip" {
   description = "The public IP of the EC2 instance in the app public subnet"
   value       = aws_instance.app_public.public_ip
+}
+
+output "app_public_instance_private_ip" {
+  description = "The private IP of the EC2 instance in the app public subnet"
+  value       = aws_instance.app_public.private_ip
 }
 
 output "tgw_app_attachment_id" {

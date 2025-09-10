@@ -58,6 +58,12 @@ resource "aws_route" "app_public_to_inspection" {
   transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
+resource "aws_route" "app_public_to_edge" {
+  route_table_id         = aws_route_table.app_public.id
+  destination_cidr_block = var.vpc_cidr_edge
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+}
+
 resource "aws_route_table_association" "app_public" {
   subnet_id      = aws_subnet.app_public.id
   route_table_id = aws_route_table.app_public.id
@@ -136,7 +142,9 @@ resource "aws_instance" "app_public" {
               sudo yum install -y httpd
               sudo systemctl enable httpd
               SVC=httpd
-              echo "<h1>App Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>VPC:</strong> App VPC</p>" | sudo tee /var/www/html/index.html           
+              PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+              PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+              echo "<h1>App Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>VPC:</strong> App VPC</p><p><strong>Private IP:</strong> $PRIVATE_IP</p><p><strong>Public IP:</strong> $PUBLIC_IP</p>" | sudo tee /var/www/html/index.html           
               sudo systemctl restart "$SVC"
               EOF
 
