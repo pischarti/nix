@@ -52,6 +52,12 @@ resource "aws_route" "inspection_public_internet_access" {
   gateway_id             = aws_internet_gateway.inspection.id
 }
 
+resource "aws_route" "inspection_public_to_edge" {
+  route_table_id         = aws_route_table.inspection_public.id
+  destination_cidr_block = var.vpc_cidr_edge
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+}
+
 resource "aws_route_table_association" "inspection_public" {
   subnet_id      = aws_subnet.inspection_public.id
   route_table_id = aws_route_table.inspection_public.id

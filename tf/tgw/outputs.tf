@@ -56,3 +56,40 @@ output "edge_generated_private_key_pem" {
   sensitive   = true
 }
 
+# Transit Gateway Outputs
+output "tgw_id" {
+  description = "The ID of the Transit Gateway"
+  value       = aws_ec2_transit_gateway.main.id
+}
+
+output "tgw_arn" {
+  description = "The ARN of the Transit Gateway"
+  value       = aws_ec2_transit_gateway.main.arn
+}
+
+output "tgw_edge_attachment_id" {
+  description = "The ID of the edge VPC attachment to TGW"
+  value       = aws_ec2_transit_gateway_vpc_attachment.edge.id
+}
+
+output "tgw_inspection_attachment_id" {
+  description = "The ID of the inspection VPC attachment to TGW"
+  value       = aws_ec2_transit_gateway_vpc_attachment.inspection.id
+}
+
+# Inspection VPC Outputs
+output "inspection_vpc_id" {
+  description = "The ID of the inspection VPC"
+  value       = aws_vpc.inspection.id
+}
+
+output "inspection_public_instance_id" {
+  description = "The ID of the EC2 instance in the inspection public subnet"
+  value       = aws_instance.inspection_public.id
+}
+
+output "inspection_public_instance_public_ip" {
+  description = "The public IP of the EC2 instance in the inspection public subnet"
+  value       = aws_instance.inspection_public.public_ip
+}
+
