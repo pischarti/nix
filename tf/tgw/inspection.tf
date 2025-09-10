@@ -52,19 +52,22 @@ resource "aws_route" "inspection_public_internet_access" {
   gateway_id             = aws_internet_gateway.inspection.id
 }
 
-# Route traffic from inspection VPC to TGW (bypassing firewall for now)
-# TODO: Add firewall routing once VPC endpoint IDs are available
-resource "aws_route" "inspection_public_to_edge" {
-  route_table_id         = aws_route_table.inspection_public.id
-  destination_cidr_block = var.vpc_cidr_edge
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
-}
+# Route traffic from inspection VPC through firewall first, then to TGW
+# Note: These routes will be created after the firewall is deployed
+# Temporarily commented out due to route conflicts - will be added manually
+# resource "aws_route" "inspection_public_to_firewall_edge" {
+#   route_table_id         = aws_route_table.inspection_public.id
+#   destination_cidr_block = var.vpc_cidr_edge
+#   vpc_endpoint_id        = aws_networkfirewall_firewall.main.id
+#   depends_on = [aws_networkfirewall_firewall.main]
+# }
 
-resource "aws_route" "inspection_public_to_app" {
-  route_table_id         = aws_route_table.inspection_public.id
-  destination_cidr_block = var.vpc_cidr_app
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
-}
+# resource "aws_route" "inspection_public_to_firewall_app" {
+#   route_table_id         = aws_route_table.inspection_public.id
+#   destination_cidr_block = var.vpc_cidr_app
+#   vpc_endpoint_id        = aws_networkfirewall_firewall.main.id
+#   depends_on = [aws_networkfirewall_firewall.main]
+# }
 
 resource "aws_route_table_association" "inspection_public" {
   subnet_id      = aws_subnet.inspection_public.id

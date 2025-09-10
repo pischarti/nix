@@ -58,11 +58,14 @@ resource "aws_route" "edge_public_to_inspection" {
   transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
-resource "aws_route" "edge_public_to_app" {
-  route_table_id         = aws_route_table.edge_public.id
-  destination_cidr_block = var.vpc_cidr_app
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
-}
+# Route traffic from edge VPC to app VPC through firewall (will be blocked)
+# Note: This route will be added manually after deployment to avoid conflicts
+# resource "aws_route" "edge_public_to_app" {
+#   route_table_id         = aws_route_table.edge_public.id
+#   destination_cidr_block = var.vpc_cidr_app
+#   vpc_endpoint_id        = aws_networkfirewall_firewall.main.id
+#   depends_on = [aws_networkfirewall_firewall.main]
+# }
 
 resource "aws_route_table_association" "edge_public" {
   subnet_id      = aws_subnet.edge_public.id

@@ -103,6 +103,11 @@ output "inspection_public_instance_private_ip" {
   value       = aws_instance.inspection_public.private_ip
 }
 
+output "inspection_public_route_table_id" {
+  description = "The ID of the public route table in the inspection VPC"
+  value       = aws_route_table.inspection_public.id
+}
+
 # App VPC Outputs
 output "app_vpc_id" {
   description = "The ID of the app VPC"
