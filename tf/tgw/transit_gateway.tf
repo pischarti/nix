@@ -118,11 +118,12 @@ resource "aws_ec2_transit_gateway_route" "edge_to_inspection" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.edge.id
 }
 
-resource "aws_ec2_transit_gateway_route" "inspection_to_edge" {
-  destination_cidr_block         = var.vpc_cidr_edge
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id
-  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
-}
+# Removed direct route to edge - traffic should go through firewall
+# resource "aws_ec2_transit_gateway_route" "inspection_to_edge" {
+#   destination_cidr_block         = var.vpc_cidr_edge
+#   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id
+#   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
+# }
 
 # App VPC routes - ALL traffic goes through inspection VPC (firewall)
 resource "aws_ec2_transit_gateway_route" "app_to_inspection" {

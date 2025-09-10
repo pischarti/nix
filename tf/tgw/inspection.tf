@@ -46,14 +46,10 @@ resource "aws_route_table" "inspection_public" {
   )
 }
 
-resource "aws_route" "inspection_public_internet_access" {
-  route_table_id         = aws_route_table.inspection_public.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.inspection.id
-}
-
-# Route ALL traffic from inspection VPC through firewall
-resource "aws_route" "inspection_public_to_firewall_all" {
+# Route ALL traffic from inspection VPC through firewall (removed direct internet access)
+# Note: This route may already exist in AWS - if so, import it with:
+# terraform import aws_route.inspection_public_to_firewall_all rtb-0df73fdcba3bf074d_0.0.0.0/0
+resource "aws_route" "inspection_public_to_firewall_all_new" {
   route_table_id         = aws_route_table.inspection_public.id
   destination_cidr_block = "0.0.0.0/0"
   vpc_endpoint_id        = local.firewall_endpoint_id
