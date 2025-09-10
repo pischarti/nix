@@ -58,6 +58,12 @@ resource "aws_route" "edge_public_to_inspection" {
   transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
+resource "aws_route" "edge_public_to_app" {
+  route_table_id         = aws_route_table.edge_public.id
+  destination_cidr_block = var.vpc_cidr_app
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+}
+
 resource "aws_route_table_association" "edge_public" {
   subnet_id      = aws_subnet.edge_public.id
   route_table_id = aws_route_table.edge_public.id

@@ -93,3 +93,24 @@ output "inspection_public_instance_public_ip" {
   value       = aws_instance.inspection_public.public_ip
 }
 
+# App VPC Outputs
+output "app_vpc_id" {
+  description = "The ID of the app VPC"
+  value       = aws_vpc.app.id
+}
+
+output "app_public_instance_id" {
+  description = "The ID of the EC2 instance in the app public subnet"
+  value       = aws_instance.app_public.id
+}
+
+output "app_public_instance_public_ip" {
+  description = "The public IP of the EC2 instance in the app public subnet"
+  value       = aws_instance.app_public.public_ip
+}
+
+output "tgw_app_attachment_id" {
+  description = "The ID of the app VPC attachment to TGW"
+  value       = aws_ec2_transit_gateway_vpc_attachment.app.id
+}
+

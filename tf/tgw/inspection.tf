@@ -58,6 +58,12 @@ resource "aws_route" "inspection_public_to_edge" {
   transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
+resource "aws_route" "inspection_public_to_app" {
+  route_table_id         = aws_route_table.inspection_public.id
+  destination_cidr_block = var.vpc_cidr_app
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+}
+
 resource "aws_route_table_association" "inspection_public" {
   subnet_id      = aws_subnet.inspection_public.id
   route_table_id = aws_route_table.inspection_public.id
@@ -82,6 +88,24 @@ resource "aws_security_group" "inspection_public_egress" {
     to_port          = 80
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "HTTP from edge VPC"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = [var.vpc_cidr_edge]
+    ipv6_cidr_blocks = []
+  }
+
+  ingress {
+    description      = "HTTP from app VPC"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = [var.vpc_cidr_app]
+    ipv6_cidr_blocks = []
   }  
 
   tags = merge(

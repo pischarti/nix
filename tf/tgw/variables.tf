@@ -84,3 +84,27 @@ variable "inspection_key_name" {
   type        = string
   default     = null
 }
+
+variable "vpc_cidr_app" {
+  description = "CIDR block for the App VPC"
+  type        = string
+  default     = "12.101.0.0/16"
+}
+
+variable "app_vpc_name" {
+  description = "Name tag for the AppVPC"
+  type        = string
+  default     = "app-vpc"
+}
+
+variable "app_public_subnet_cidr" {
+  description = "CIDR block for the public subnet in the app VPC"
+  type        = string
+  default     = "12.101.102.0/24"
+}
+
+variable "app_key_name" {
+  description = "Name of an existing EC2 Key Pair to enable SSH access"
+  type        = string
+  default     = null
+}
