@@ -94,7 +94,7 @@ resource "aws_networkfirewall_rule_group" "stateless" {
         #   }
         # }
         
-        # Rule 2: Allow all other traffic
+        # Rule 2: Allow all other traffic (including app-to-edge)
         stateless_rule {
           # priority = 2
           priority = 1
@@ -175,24 +175,11 @@ locals {
   firewall_endpoint_id = try(tolist(data.aws_networkfirewall_firewall.main.firewall_status[0].sync_states)[0].attachment[0].endpoint_id, null)
 }
 
-# Route from firewall to TGW for inter-VPC traffic
-resource "aws_route" "firewall_to_tgw_edge" {
-  route_table_id         = aws_route_table.firewall.id
-  destination_cidr_block = var.vpc_cidr_edge
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
-}
-
-resource "aws_route" "firewall_to_tgw_app" {
-  route_table_id         = aws_route_table.firewall.id
-  destination_cidr_block = var.vpc_cidr_app
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
-}
-
-# Route from firewall to internet
-resource "aws_route" "firewall_to_internet" {
+# Single route: All traffic from firewall goes back to Transit Gateway
+resource "aws_route" "firewall_to_tgw_all" {
   route_table_id         = aws_route_table.firewall.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.inspection.id
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
 # Associate firewall subnets with firewall route table

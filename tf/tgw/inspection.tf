@@ -52,10 +52,10 @@ resource "aws_route" "inspection_public_internet_access" {
   gateway_id             = aws_internet_gateway.inspection.id
 }
 
-# Route traffic from inspection VPC through firewall for app traffic (will block edge-to-app)
-resource "aws_route" "inspection_public_to_firewall_app" {
+# Route ALL traffic from inspection VPC through firewall
+resource "aws_route" "inspection_public_to_firewall_all" {
   route_table_id         = aws_route_table.inspection_public.id
-  destination_cidr_block = var.vpc_cidr_app
+  destination_cidr_block = "0.0.0.0/0"
   vpc_endpoint_id        = local.firewall_endpoint_id
 
   depends_on = [aws_networkfirewall_firewall.main]
@@ -70,13 +70,7 @@ resource "aws_route" "inspection_public_to_firewall_app" {
 #   depends_on = [aws_networkfirewall_firewall.main]
 # }
 
-resource "aws_route" "inspection_public_to_edge" {
-  route_table_id         = aws_route_table.inspection_public.id
-  destination_cidr_block = var.vpc_cidr_edge
-  vpc_endpoint_id        = local.firewall_endpoint_id
-
-  depends_on = [aws_networkfirewall_firewall.main]
-}
+# All traffic now goes through firewall - no direct routes needed
 
 resource "aws_route_table_association" "inspection_public" {
   subnet_id      = aws_subnet.inspection_public.id

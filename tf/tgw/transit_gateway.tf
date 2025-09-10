@@ -124,9 +124,9 @@ resource "aws_ec2_transit_gateway_route" "inspection_to_edge" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
 }
 
-# App VPC routes
+# App VPC routes - ALL traffic goes through inspection VPC (firewall)
 resource "aws_ec2_transit_gateway_route" "app_to_inspection" {
-  destination_cidr_block         = var.vpc_cidr_inspection
+  destination_cidr_block         = "0.0.0.0/0"
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.inspection.id
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.app.id
 }
@@ -137,15 +137,22 @@ resource "aws_ec2_transit_gateway_route" "inspection_to_app" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
 }
 
+# Routes for traffic coming back from firewall to TGW
+resource "aws_ec2_transit_gateway_route" "inspection_to_edge_from_firewall" {
+  destination_cidr_block         = var.vpc_cidr_edge
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
+}
+
+resource "aws_ec2_transit_gateway_route" "inspection_to_internet_from_firewall" {
+  destination_cidr_block         = "0.0.0.0/0"
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
+}
+
 # Edge VPC routes to app VPC through inspection VPC (for firewall inspection)
 resource "aws_ec2_transit_gateway_route" "edge_to_app" {
   destination_cidr_block         = var.vpc_cidr_app
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.inspection.id
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.edge.id
-}
-
-resource "aws_ec2_transit_gateway_route" "app_to_edge" {
-  destination_cidr_block         = var.vpc_cidr_edge
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id
-  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.app.id
 }
