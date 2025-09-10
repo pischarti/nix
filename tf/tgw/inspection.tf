@@ -105,6 +105,15 @@ resource "aws_security_group" "inspection_public_egress" {
   }
 
   ingress {
+    description      = "SSH from allowed CIDR"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = [var.edge_ssh_ingress_cidr]
+    ipv6_cidr_blocks = []
+  }
+  
+  ingress {
     description      = "HTTP from edge VPC"
     from_port        = 80
     to_port          = 80
