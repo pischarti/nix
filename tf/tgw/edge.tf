@@ -1,5 +1,5 @@
 resource "aws_vpc" "edge" {
-  cidr_block           = var.vpc_cidr_space
+  cidr_block           = var.vpc_cidr_edge
   enable_dns_hostnames = var.enable_dns_hostnames
   enable_dns_support   = var.enable_dns_support
 
@@ -57,8 +57,8 @@ resource "aws_route_table_association" "edge_public" {
   route_table_id = aws_route_table.edge_public.id
 }
 
-resource "aws_security_group" "edge_public_ssh" {
-  name        = "${var.edge_vpc_name}-public-ssh-sg"
+resource "aws_security_group" "edge_public" {
+  name        = "${var.edge_vpc_name}-public-sg"
   description = "Allow SSH and egress to internet"
   vpc_id      = aws_vpc.edge.id
 
@@ -96,26 +96,11 @@ resource "aws_security_group" "edge_public_ssh" {
   )
 }
 
-data "aws_ami" "amazon_linux_2" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
 resource "aws_instance" "edge_public" {
   ami                         = data.aws_ami.amazon_linux_2.id
-  instance_type               = var.edge_instance_type
+  instance_type               = var.tgw_instance_type
   subnet_id                   = aws_subnet.edge_public.id
-  vpc_security_group_ids      = [aws_security_group.edge_public_ssh.id]
+  vpc_security_group_ids      = [aws_security_group.edge_public.id]
   associate_public_ip_address = true
   key_name                    = coalesce(var.edge_key_name, aws_key_pair.edge_generated.key_name)
   user_data_replace_on_change = true
@@ -125,7 +110,7 @@ resource "aws_instance" "edge_public" {
               set -euxo pipefail
               sudo yum update -y || true
               sudo yum install -y httpd
-              systemctl enable httpd
+              sudo systemctl enable httpd
               SVC=httpd
               echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p>" | sudo tee /var/www/html/index.html           
               sudo systemctl restart "$SVC"
@@ -139,7 +124,8 @@ resource "aws_instance" "edge_public" {
   )
 
   depends_on = [
-    aws_route_table_association.edge_public
+    aws_route_table_association.edge_public,
+    aws_security_group.edge_public
   ]
 }
 

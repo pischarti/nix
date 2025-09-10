@@ -5,10 +5,16 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "vpc_cidr_space" {
+variable "vpc_cidr_edge" {
   description = "CIDR block for the VPC"
   type        = string
   default     = "10.101.0.0/16"
+}
+
+variable "vpc_cidr_inspection" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "11.101.0.0/16"
 }
 
 variable "edge_vpc_name" {
@@ -43,7 +49,7 @@ variable "edge_public_subnet_cidr" {
   default     = "10.101.101.0/24"
 }
 
-variable "edge_instance_type" {
+variable "tgw_instance_type" {
   description = "Instance type for the edge EC2 instance"
   type        = string
   default     = "t3.micro"
@@ -59,4 +65,22 @@ variable "edge_ssh_ingress_cidr" {
   description = "CIDR block allowed to SSH into the edge instance"
   type        = string
   default     = "0.0.0.0/0"
+}
+
+variable "inspection_vpc_name" {
+  description = "Name tag for the InspectionVPC"
+  type        = string
+  default     = "inspection-vpc"
+}
+
+variable "inspection_public_subnet_cidr" {
+  description = "CIDR block for the public subnet in the inspection VPC"
+  type        = string
+  default     = "11.101.102.0/24"
+}
+
+variable "inspection_key_name" {
+  description = "Name of an existing EC2 Key Pair to enable SSH access"
+  type        = string
+  default     = null
 }
