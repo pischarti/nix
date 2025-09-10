@@ -114,3 +114,23 @@ output "tgw_app_attachment_id" {
   value       = aws_ec2_transit_gateway_vpc_attachment.app.id
 }
 
+# Network Firewall Outputs
+output "network_firewall_id" {
+  description = "The ID of the Network Firewall"
+  value       = aws_networkfirewall_firewall.main.id
+}
+
+output "network_firewall_arn" {
+  description = "The ARN of the Network Firewall"
+  value       = aws_networkfirewall_firewall.main.arn
+}
+
+output "firewall_subnet_ids" {
+  description = "The IDs of the firewall subnets"
+  value       = [
+    aws_subnet.firewall_subnet_1.id,
+    aws_subnet.firewall_subnet_2.id,
+    aws_subnet.firewall_subnet_3.id
+  ]
+}
+

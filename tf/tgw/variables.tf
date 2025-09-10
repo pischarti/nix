@@ -108,3 +108,22 @@ variable "app_key_name" {
   type        = string
   default     = null
 }
+
+# Network Firewall Variables
+variable "firewall_subnet_1_cidr" {
+  description = "CIDR block for the first firewall subnet in the inspection VPC"
+  type        = string
+  default     = "11.101.1.0/24"
+}
+
+variable "firewall_subnet_2_cidr" {
+  description = "CIDR block for the second firewall subnet in the inspection VPC"
+  type        = string
+  default     = "11.101.2.0/24"
+}
+
+variable "firewall_subnet_3_cidr" {
+  description = "CIDR block for the third firewall subnet in the inspection VPC"
+  type        = string
+  default     = "11.101.3.0/24"
+}

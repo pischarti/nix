@@ -52,6 +52,8 @@ resource "aws_route" "inspection_public_internet_access" {
   gateway_id             = aws_internet_gateway.inspection.id
 }
 
+# Route traffic from inspection VPC to TGW (bypassing firewall for now)
+# TODO: Add firewall routing once VPC endpoint IDs are available
 resource "aws_route" "inspection_public_to_edge" {
   route_table_id         = aws_route_table.inspection_public.id
   destination_cidr_block = var.vpc_cidr_edge
