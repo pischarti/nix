@@ -62,10 +62,20 @@ resource "aws_route" "inspection_public_to_firewall_app" {
 }
 
 # Route traffic from inspection VPC directly to edge VPC (bypassing firewall)
+# resource "aws_route" "inspection_public_to_edge" {
+#   route_table_id         = aws_route_table.inspection_public.id
+#   destination_cidr_block = var.vpc_cidr_edge
+#   vpc_endpoint_id        = local.firewall_endpoint_id
+
+#   depends_on = [aws_networkfirewall_firewall.main]
+# }
+
 resource "aws_route" "inspection_public_to_edge" {
   route_table_id         = aws_route_table.inspection_public.id
   destination_cidr_block = var.vpc_cidr_edge
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+  vpc_endpoint_id        = local.firewall_endpoint_id
+
+  depends_on = [aws_networkfirewall_firewall.main]
 }
 
 resource "aws_route_table_association" "inspection_public" {
@@ -135,7 +145,7 @@ resource "aws_instance" "inspection_public" {
               sudo yum install -y httpd
               sudo systemctl enable httpd
               SVC=httpd
-              echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p>" | sudo tee /var/www/html/index.html           
+              echo "<h1>Server Details: Inspection</h1><p><strong>Hostname:</strong> $(hostname)</p>" | sudo tee /var/www/html/index.html           
               sudo systemctl restart "$SVC"
               EOF
 

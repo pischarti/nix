@@ -127,7 +127,7 @@ resource "aws_instance" "edge_public" {
               SVC=httpd
               PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
               PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-              echo "<h1>Edge Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>Private IP:</strong> $PRIVATE_IP</p><p><strong>Public IP:</strong> $PUBLIC_IP</p>" | sudo tee /var/www/html/index.html           
+              echo "<h1>Edge Server Details: Edge</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>Private IP:</strong> $PRIVATE_IP</p><p><strong>Public IP:</strong> $PUBLIC_IP</p>" | sudo tee /var/www/html/index.html           
               sudo systemctl restart "$SVC"
               EOF
 

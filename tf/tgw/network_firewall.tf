@@ -75,27 +75,29 @@ resource "aws_networkfirewall_rule_group" "stateless" {
   rule_group {
     rules_source {
       stateless_rules_and_custom_actions {
-        # Rule 1: Block traffic from edge VPC to app VPC
-        # stateless_rule {
-        #   priority = 1
-        #   rule_definition {
-        #     actions = ["aws:drop"]
-        #     match_attributes {
-        #       protocols = [6] # TCP
-        #       source {
-        #         address_definition = var.vpc_cidr_edge
-        #       }
-        #       destination {
-        #         address_definition = var.vpc_cidr_app
-        #       }
-        #     }
-        #   }
-        # }
+        # Rule 1: Block traffic between edge VPC to app VPC
+        stateless_rule {
+          priority = 1
+          rule_definition {
+            actions = ["aws:drop"]
+            match_attributes {
+              protocols = [6] # TCP
+              source {
+                # address_definition = var.vpc_cidr_edge
+                address_definition = var.vpc_cidr_app
+              }
+              destination {
+                # address_definition = var.vpc_cidr_app
+                address_definition = var.vpc_cidr_edge
+              }
+            }
+          }
+        }
         
         # Rule 2: Allow all other traffic
         stateless_rule {
-          # priority = 2
-          priority = 1
+          priority = 2
+          # priority = 1
           rule_definition {
             actions = ["aws:forward_to_sfe"]
             match_attributes {

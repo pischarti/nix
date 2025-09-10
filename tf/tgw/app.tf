@@ -144,7 +144,7 @@ resource "aws_instance" "app_public" {
               SVC=httpd
               PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
               PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-              echo "<h1>App Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>VPC:</strong> App VPC</p><p><strong>Private IP:</strong> $PRIVATE_IP</p><p><strong>Public IP:</strong> $PUBLIC_IP</p>" | sudo tee /var/www/html/index.html           
+              echo "<h1>App Server Details: App</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>VPC:</strong> App VPC</p><p><strong>Private IP:</strong> $PRIVATE_IP</p><p><strong>Public IP:</strong> $PUBLIC_IP</p>" | sudo tee /var/www/html/index.html           
               sudo systemctl restart "$SVC"
               EOF
 
