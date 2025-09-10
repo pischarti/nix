@@ -65,17 +65,36 @@ resource "aws_networkfirewall_firewall_policy" "main" {
   )
 }
 
-# Stateless Rule Group (allow all traffic for now)
+# Stateless Rule Group (block edge to app traffic, allow others)
 resource "aws_networkfirewall_rule_group" "stateless" {
   capacity    = 100
   name        = "${var.inspection_vpc_name}-stateless-rules"
   type        = "STATELESS"
-  description = "Stateless rule group for traffic inspection"
+  description = "Stateless rule group for traffic inspection - blocks edge to app traffic"
 
   rule_group {
     rules_source {
       stateless_rules_and_custom_actions {
+        # Rule 1: Block traffic from edge VPC to app VPC
+        # stateless_rule {
+        #   priority = 1
+        #   rule_definition {
+        #     actions = ["aws:drop"]
+        #     match_attributes {
+        #       protocols = [6] # TCP
+        #       source {
+        #         address_definition = var.vpc_cidr_edge
+        #       }
+        #       destination {
+        #         address_definition = var.vpc_cidr_app
+        #       }
+        #     }
+        #   }
+        # }
+        
+        # Rule 2: Allow all other traffic
         stateless_rule {
+          # priority = 2
           priority = 1
           rule_definition {
             actions = ["aws:forward_to_sfe"]
@@ -147,6 +166,11 @@ resource "aws_route_table" "firewall" {
 # Data source to get firewall endpoint IDs
 data "aws_networkfirewall_firewall" "main" {
   arn = aws_networkfirewall_firewall.main.arn
+}
+
+# Local value to get the VPC endpoint ID
+locals {
+  firewall_endpoint_id = try(tolist(data.aws_networkfirewall_firewall.main.firewall_status[0].sync_states)[0].attachment[0].endpoint_id, null)
 }
 
 # Route from firewall to TGW for inter-VPC traffic

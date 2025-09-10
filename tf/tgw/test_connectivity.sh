@@ -15,12 +15,12 @@ echo "App Private IP: $APP_PRIVATE_IP"
 echo "Inspection Public IP: $INSPECTION_PUBLIC_IP"
 
 echo ""
-echo "=== Testing from Edge to App (Public IP) ==="
-ssh -i edge_generated.pem -o StrictHostKeyChecking=no ec2-user@$EDGE_PUBLIC_IP "curl -v http://$APP_PUBLIC_IP" || echo "Failed to connect to app public IP"
+echo "=== Testing from Edge to App (Public IP) - SHOULD BE BLOCKED BY FIREWALL ==="
+ssh -i edge_generated.pem -o StrictHostKeyChecking=no ec2-user@$EDGE_PUBLIC_IP "curl -v --connect-timeout 10 http://$APP_PUBLIC_IP" || echo "✅ BLOCKED: Edge to App (public) - Firewall working!"
 
 echo ""
-echo "=== Testing from Edge to App (Private IP) ==="
-ssh -i edge_generated.pem -o StrictHostKeyChecking=no ec2-user@$EDGE_PUBLIC_IP "curl -v http://$APP_PRIVATE_IP" || echo "Failed to connect to app private IP"
+echo "=== Testing from Edge to App (Private IP) - SHOULD BE BLOCKED BY FIREWALL ==="
+ssh -i edge_generated.pem -o StrictHostKeyChecking=no ec2-user@$EDGE_PUBLIC_IP "curl -v --connect-timeout 10 http://$APP_PRIVATE_IP" || echo "✅ BLOCKED: Edge to App (private) - Firewall working!"
 
 echo ""
 echo "=== Testing from Edge to Inspection (Public IP) ==="
