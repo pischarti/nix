@@ -136,6 +136,7 @@ resource "aws_instance" "inspection_public" {
   vpc_security_group_ids      = [aws_security_group.inspection_public_egress.id]
   associate_public_ip_address = true
   user_data_replace_on_change = true
+  key_name                    = coalesce(var.edge_key_name, aws_key_pair.edge_generated.key_name)
 
   user_data = <<-EOF
               #!/bin/bash
