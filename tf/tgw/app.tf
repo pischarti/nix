@@ -58,6 +58,7 @@ resource "aws_route" "app_public_to_inspection" {
   transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
+# Route to edge VPC through inspection VPC (firewall)
 resource "aws_route" "app_public_to_edge" {
   route_table_id         = aws_route_table.app_public.id
   destination_cidr_block = var.vpc_cidr_edge

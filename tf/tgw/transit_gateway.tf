@@ -138,15 +138,15 @@ resource "aws_ec2_transit_gateway_route" "inspection_to_app" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
 }
 
-# Edge VPC routes to app VPC
+# Edge VPC routes to app VPC through inspection VPC (firewall)
 resource "aws_ec2_transit_gateway_route" "edge_to_app" {
   destination_cidr_block         = var.vpc_cidr_app
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.app.id
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.inspection.id
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.edge.id
 }
 
 resource "aws_ec2_transit_gateway_route" "app_to_edge" {
   destination_cidr_block         = var.vpc_cidr_edge
-  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.inspection.id
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.app.id
 }
