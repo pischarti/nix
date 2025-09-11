@@ -71,6 +71,7 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "inspection" {
   vpc_id                                          = aws_vpc.inspection.id
   transit_gateway_default_route_table_association = false
   transit_gateway_default_route_table_propagation = false
+  appliance_mode_support                          = "enable"
 
   tags = merge(
     {

@@ -169,6 +169,13 @@ data "aws_networkfirewall_firewall" "main" {
 #   gateway_id             = aws_internet_gateway.inspection.id
 # }
 
+# # Route from firewall to tgw
+resource "aws_route" "firewall_to_tgw" {
+  route_table_id         = aws_route_table.firewall.id
+  destination_cidr_block = "0.0.0.0/0"
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+}
+
 # Associate firewall subnets with firewall route table
 resource "aws_route_table_association" "firewall_subnet_1" {
   subnet_id      = aws_subnet.firewall_subnet_1.id
