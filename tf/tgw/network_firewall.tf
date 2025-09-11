@@ -150,11 +150,30 @@ data "aws_networkfirewall_firewall" "main" {
   arn = aws_networkfirewall_firewall.main.arn
 }
 
-# Route from firewall to TGW for all traffic
-resource "aws_route" "firewall_to_tgw" {
+# Get the first firewall endpoint ID using for_each
+locals {
+  firewall_endpoint_ids = tolist(data.aws_networkfirewall_firewall.main.firewall_status[0].sync_states)[0].attachment[0].endpoint_id
+}
+
+
+# Route from firewall to TGW for inter-VPC traffic
+resource "aws_route" "firewall_to_tgw_edge" {
+  route_table_id         = aws_route_table.firewall.id
+  destination_cidr_block = var.vpc_cidr_edge
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+}
+
+resource "aws_route" "firewall_to_tgw_app" {
+  route_table_id         = aws_route_table.firewall.id
+  destination_cidr_block = var.vpc_cidr_app
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+}
+
+# Route from firewall to internet
+resource "aws_route" "firewall_to_internet" {
   route_table_id         = aws_route_table.firewall.id
   destination_cidr_block = "0.0.0.0/0"
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+  gateway_id             = aws_internet_gateway.inspection.id
 }
 
 # Associate firewall subnets with firewall route table

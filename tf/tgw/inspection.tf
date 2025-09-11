@@ -52,7 +52,20 @@ resource "aws_route_table" "inspection_public" {
 #   gateway_id             = aws_internet_gateway.inspection.id
 # }
 
-# Route traffic from inspection VPC to TGW (firewall will process traffic at subnet level)
+# Route traffic from inspection VPC to firewall endpoints (more specific routes first)
+resource "aws_route" "inspection_public_to_firewall_edge" {
+  route_table_id         = aws_route_table.inspection_public.id
+  destination_cidr_block = var.vpc_cidr_edge
+  vpc_endpoint_id        = local.firewall_endpoint_ids
+}
+
+resource "aws_route" "inspection_public_to_firewall_app" {
+  route_table_id         = aws_route_table.inspection_public.id
+  destination_cidr_block = var.vpc_cidr_app
+  vpc_endpoint_id        = local.firewall_endpoint_ids
+}
+
+# Route other traffic to TGW (less specific route)
 resource "aws_route" "inspection_public_to_tgw" {
   route_table_id         = aws_route_table.inspection_public.id
   destination_cidr_block = "0.0.0.0/0"
