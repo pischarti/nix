@@ -92,24 +92,6 @@ resource "aws_security_group" "app_public" {
     ipv6_cidr_blocks = ["::/0"]
   }
 
-  ingress {
-    description      = "HTTP from edge VPC"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = [var.vpc_cidr_edge]
-    ipv6_cidr_blocks = []
-  }
-
-  ingress {
-    description      = "HTTP from inspection VPC"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = [var.vpc_cidr_inspection]
-    ipv6_cidr_blocks = []
-  }
-
   egress {
     from_port        = 0
     to_port          = 0
@@ -132,7 +114,7 @@ resource "aws_instance" "app_public" {
   subnet_id                   = aws_subnet.app_public.id
   vpc_security_group_ids      = [aws_security_group.app_public.id]
   associate_public_ip_address = true
-  key_name                    = coalesce(var.app_key_name, aws_key_pair.edge_generated.key_name)
+  key_name                    = coalesce(var.app_key_name, aws_key_pair.ssh_generated.key_name)
   user_data_replace_on_change = true
 
   user_data = <<-EOF

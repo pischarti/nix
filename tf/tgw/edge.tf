@@ -79,7 +79,7 @@ resource "aws_security_group" "edge_public" {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = [var.edge_ssh_ingress_cidr]
+    cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = []
   }
 
@@ -102,7 +102,7 @@ resource "aws_security_group" "edge_public" {
 
   tags = merge(
     {
-      Name = "${var.edge_vpc_name}-public-ssh-sg"
+      Name = "${var.edge_vpc_name}-public-sg"
     },
     var.tags
   )
@@ -114,7 +114,7 @@ resource "aws_instance" "edge_public" {
   subnet_id                   = aws_subnet.edge_public.id
   vpc_security_group_ids      = [aws_security_group.edge_public.id]
   associate_public_ip_address = true
-  key_name                    = coalesce(var.edge_key_name, aws_key_pair.edge_generated.key_name)
+  key_name                    = coalesce(var.edge_key_name, aws_key_pair.ssh_generated.key_name)
   user_data_replace_on_change = true
 
   user_data = <<-EOF
@@ -141,14 +141,4 @@ resource "aws_instance" "edge_public" {
     aws_route_table_association.edge_public,
     aws_security_group.edge_public
   ]
-}
-
-resource "tls_private_key" "edge" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "edge_generated" {
-  key_name   = "${var.edge_vpc_name}-generated"
-  public_key = tls_private_key.edge.public_key_openssh
 }

@@ -45,19 +45,19 @@ output "edge_public_instance_private_ip" {
   value       = aws_instance.edge_public.private_ip
 }
 
-output "edge_generated_key_pair_name" {
+output "ssh_generated_key_pair_name" {
   description = "Name of the generated EC2 key pair"
-  value       = aws_key_pair.edge_generated.key_name
+  value       = aws_key_pair.ssh_generated.key_name
 }
 
-output "edge_generated_public_key" {
+output "ssh_generated_public_key" {
   description = "Public key of the generated key pair"
-  value       = tls_private_key.edge.public_key_openssh
+  value       = tls_private_key.ssh_generated.public_key_openssh
 }
 
-output "edge_generated_private_key_pem" {
+output "ssh_generated_private_key_pem" {
   description = "PEM-encoded private key for the generated key pair"
-  value       = tls_private_key.edge.private_key_pem
+  value       = tls_private_key.ssh_generated.private_key_pem
   sensitive   = true
 }
 

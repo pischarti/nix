@@ -71,17 +71,18 @@ resource "aws_route_table_association" "inspection_public" {
   route_table_id = aws_route_table.inspection_public.id
 }
 
-resource "aws_security_group" "inspection_public_egress" {
+resource "aws_security_group" "inspection_public" {
   name        = "${var.inspection_vpc_name}-public-sg"
   description = "Allow egress to internet"
   vpc_id      = aws_vpc.inspection.id
 
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+  ingress {
+    description      = "SSH from allowed CIDR"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = [var.edge_ssh_ingress_cidr]
+    ipv6_cidr_blocks = []
   }
 
   ingress {
@@ -92,27 +93,18 @@ resource "aws_security_group" "inspection_public_egress" {
     cidr_blocks      = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description      = "HTTP from edge VPC"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = [var.vpc_cidr_edge]
-    ipv6_cidr_blocks = []
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 
-  ingress {
-    description      = "HTTP from app VPC"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = [var.vpc_cidr_app]
-    ipv6_cidr_blocks = []
-  }  
 
   tags = merge(
     {
-      Name = "${var.inspection_vpc_name}-public-egress-sg"
+      Name = "${var.inspection_vpc_name}-public-sg"
     },
     var.tags
   )
@@ -122,9 +114,10 @@ resource "aws_instance" "inspection_public" {
   ami                         = data.aws_ami.amazon_linux_2.id
   instance_type               = var.tgw_instance_type
   subnet_id                   = aws_subnet.inspection_public.id
-  vpc_security_group_ids      = [aws_security_group.inspection_public_egress.id]
+  vpc_security_group_ids      = [aws_security_group.inspection_public.id]
   associate_public_ip_address = true
   user_data_replace_on_change = true
+  key_name                    = coalesce(var.edge_key_name, aws_key_pair.ssh_generated.key_name)
 
   user_data = <<-EOF
               #!/bin/bash
@@ -133,7 +126,9 @@ resource "aws_instance" "inspection_public" {
               sudo yum install -y httpd
               sudo systemctl enable httpd
               SVC=httpd
-              echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p>" | sudo tee /var/www/html/index.html           
+              PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+              PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+              echo "<h1>Inspection Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>Private IP:</strong> $PRIVATE_IP</p><p><strong>Public IP:</strong> $PUBLIC_IP</p>" | sudo tee /var/www/html/index.html           
               sudo systemctl restart "$SVC"
               EOF
 
@@ -145,6 +140,7 @@ resource "aws_instance" "inspection_public" {
   )
 
   depends_on = [
-    aws_route_table_association.inspection_public
+    aws_route_table_association.inspection_public,
+    aws_security_group.inspection_public
   ]
 }

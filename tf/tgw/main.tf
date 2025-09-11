@@ -32,3 +32,12 @@ data "aws_ami" "amazon_linux_2" {
   }
 }
 
+resource "tls_private_key" "ssh_generated" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "ssh_generated" {
+  key_name   = "ssh-key-generated"
+  public_key = tls_private_key.ssh_generated.public_key_openssh
+}
