@@ -53,23 +53,30 @@ resource "aws_route_table" "inspection_public" {
 # }
 
 # Route traffic from inspection VPC to firewall endpoints (more specific routes first)
-resource "aws_route" "inspection_public_to_firewall_edge" {
-  route_table_id         = aws_route_table.inspection_public.id
-  destination_cidr_block = var.vpc_cidr_edge
-  vpc_endpoint_id        = local.firewall_endpoint_ids
-}
+# resource "aws_route" "inspection_public_to_firewall_edge" {
+#   route_table_id         = aws_route_table.inspection_public.id
+#   destination_cidr_block = var.vpc_cidr_edge
+#   vpc_endpoint_id        = local.firewall_endpoint_ids
+# }
 
-resource "aws_route" "inspection_public_to_firewall_app" {
-  route_table_id         = aws_route_table.inspection_public.id
-  destination_cidr_block = var.vpc_cidr_app
-  vpc_endpoint_id        = local.firewall_endpoint_ids
-}
+# resource "aws_route" "inspection_public_to_firewall_app" {
+#   route_table_id         = aws_route_table.inspection_public.id
+#   destination_cidr_block = var.vpc_cidr_app
+#   vpc_endpoint_id        = local.firewall_endpoint_ids
+# }
 
-# Route other traffic to TGW (less specific route)
+# # Route other traffic to TGW (less specific route)
+# resource "aws_route" "inspection_public_to_tgw" {
+#   route_table_id         = aws_route_table.inspection_public.id
+#   destination_cidr_block = "0.0.0.0/0"
+#   transit_gateway_id     = aws_ec2_transit_gateway.main.id
+# }
+
+# Route all traffic to NFW
 resource "aws_route" "inspection_public_to_tgw" {
   route_table_id         = aws_route_table.inspection_public.id
   destination_cidr_block = "0.0.0.0/0"
-  transit_gateway_id     = aws_ec2_transit_gateway.main.id
+  vpc_endpoint_id        = local.firewall_endpoint_ids  
 }
 
 resource "aws_route_table_association" "inspection_public" {

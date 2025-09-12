@@ -65,7 +65,7 @@ resource "aws_networkfirewall_firewall_policy" "main" {
   )
 }
 
-# Stateless Rule Group (allow all traffic for now)
+# Stateless Rule Group (allow/drop all traffic)
 resource "aws_networkfirewall_rule_group" "stateless" {
   capacity    = 100
   name        = "${var.inspection_vpc_name}-stateless-rules"
@@ -78,8 +78,8 @@ resource "aws_networkfirewall_rule_group" "stateless" {
         stateless_rule {
           priority = 1
           rule_definition {
-            # actions = ["aws:forward_to_sfe"]
-            actions = ["aws:drop"]
+            actions = ["aws:forward_to_sfe"]
+            # actions = ["aws:drop"]
             match_attributes {
               protocols = [6] # TCP
               source {
@@ -169,11 +169,18 @@ resource "aws_route" "firewall_to_tgw_app" {
   transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
+# # Route from firewall to internet
+# resource "aws_route" "firewall_to_internet" {
+#   route_table_id         = aws_route_table.firewall.id
+#   destination_cidr_block = "0.0.0.0/0"
+#   gateway_id             = aws_internet_gateway.inspection.id
+# }
+
 # Route from firewall to internet
 resource "aws_route" "firewall_to_internet" {
   route_table_id         = aws_route_table.firewall.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.inspection.id
+  transit_gateway_id     = aws_ec2_transit_gateway.main.id
 }
 
 # Associate firewall subnets with firewall route table

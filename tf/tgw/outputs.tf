@@ -109,20 +109,20 @@ output "app_vpc_id" {
   value       = aws_vpc.app.id
 }
 
-output "app_public_instance_id" {
-  description = "The ID of the EC2 instance in the app public subnet"
-  value       = aws_instance.app_public.id
-}
+# output "app_public_instance_id" {
+#   description = "The ID of the EC2 instance in the app public subnet"
+#   value       = aws_instance.app_public.id
+# }
 
-output "app_public_instance_public_ip" {
-  description = "The public IP of the EC2 instance in the app public subnet"
-  value       = aws_instance.app_public.public_ip
-}
+# output "app_public_instance_public_ip" {
+#   description = "The public IP of the EC2 instance in the app public subnet"
+#   value       = aws_instance.app_public.public_ip
+# }
 
-output "app_public_instance_private_ip" {
-  description = "The private IP of the EC2 instance in the app public subnet"
-  value       = aws_instance.app_public.private_ip
-}
+# output "app_public_instance_private_ip" {
+#   description = "The private IP of the EC2 instance in the app public subnet"
+#   value       = aws_instance.app_public.private_ip
+# }
 
 output "tgw_app_attachment_id" {
   description = "The ID of the app VPC attachment to TGW"

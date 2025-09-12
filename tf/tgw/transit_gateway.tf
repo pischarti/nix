@@ -119,6 +119,12 @@ resource "aws_ec2_transit_gateway_route" "edge_to_inspection" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.edge.id
 }
 
+resource "aws_ec2_transit_gateway_route" "inspection_to_internet" {
+  destination_cidr_block         = "0.0.0.0/0"
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.inspection.id
+}
+
 resource "aws_ec2_transit_gateway_route" "inspection_to_edge" {
   destination_cidr_block         = var.vpc_cidr_edge
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.edge.id

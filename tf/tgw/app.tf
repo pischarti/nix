@@ -52,6 +52,12 @@ resource "aws_route" "app_public_internet_access" {
   gateway_id             = aws_internet_gateway.app.id
 }
 
+# resource "aws_route" "app_public_internet_access" {
+#   route_table_id         = aws_route_table.app_public.id
+#   destination_cidr_block = "0.0.0.0/0"
+#   transit_gateway_id     = aws_ec2_transit_gateway.main.id
+# }
+
 resource "aws_route" "app_public_to_inspection" {
   route_table_id         = aws_route_table.app_public.id
   destination_cidr_block = var.vpc_cidr_inspection
