@@ -98,10 +98,19 @@ variable "inspection_key_name" {
   default     = null
 }
 
-variable "vpc_cidr_app" {
+variable "app_vpc_cidr" {
   description = "CIDR block for the App VPC"
   type        = string
-  default     = "12.101.0.0/16"
+}
+
+variable "app_vpc_tgw_subnet_cidr" {
+  description = "CIDR block for the TGW subnet in the app VPC"
+  type        = string
+}
+
+variable "app_vpc_application_workload_subnet_cidr" {
+  description = "CIDR block for the application workload subnet in the app VPC"
+  type        = string
 }
 
 variable "app_vpc_name" {
@@ -139,4 +148,19 @@ variable "firewall_subnet_3_cidr" {
   description = "CIDR block for the third firewall subnet in the inspection VPC"
   type        = string
   default     = "11.101.3.0/24"
+}
+
+variable "egress_vpc_cidr" {
+  description = "CIDR block for the egress VPC"
+  type        = string
+}
+
+variable "egress_vpc_tgw_subnet_cidr" {
+  description = "CIDR block for the TGW subnet in the egress VPC"
+  type        = string
+}
+
+variable "egress_vpc_igw_subnet_cidr" {
+  description = "CIDR block for the IGW subnet in the egress VPC"
+  type        = string
 }
