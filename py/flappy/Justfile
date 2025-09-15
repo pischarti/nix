@@ -1,0 +1,53 @@
+# Flappy Bird Game Commands
+
+# Install dependencies
+install:
+    uv sync
+
+# Run the game
+run:
+    uv run python flappy_bird.py
+
+# Run with development dependencies
+dev:
+    uv sync --dev
+    uv run python flappy_bird.py
+
+# Format code
+format:
+    uv run black .
+
+# Lint code
+lint:
+    uv run flake8 .
+
+# Run tests
+test:
+    uv run pytest
+
+# Clean up
+clean:
+    rm -rf .venv
+    rm -rf __pycache__
+    rm -rf .pytest_cache
+
+# Enter development shell
+shell:
+    nix develop
+
+# Build with Nix
+build:
+    nix build
+
+# Show help
+help:
+    @echo "Available commands:"
+    @echo "  install  - Install dependencies"
+    @echo "  run      - Run the game"
+    @echo "  dev      - Run with dev dependencies"
+    @echo "  format   - Format code with black"
+    @echo "  lint     - Lint code with flake8"
+    @echo "  test     - Run tests"
+    @echo "  clean    - Clean up generated files"
+    @echo "  shell    - Enter Nix development shell"
+    @echo "  build    - Build with Nix"
