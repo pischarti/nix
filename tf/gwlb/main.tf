@@ -325,6 +325,18 @@ resource "aws_lb_target_group" "firewall_endpoints" {
 # For now, we'll create the target group without initial targets.
 # Targets can be registered manually or via external automation after deployment.
 
+# Optional: Register firewall endpoint IPs if provided
+resource "aws_lb_target_group_attachment" "firewall_endpoints_optional" {
+  count = length(var.firewall_endpoint_ips)
+
+  target_group_arn = aws_lb_target_group.firewall_endpoints.arn
+  target_id        = var.firewall_endpoint_ips[count.index]
+  port             = 6081
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
 # GWLB Listener
 resource "aws_lb_listener" "gwlb" {

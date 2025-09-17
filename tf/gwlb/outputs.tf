@@ -50,6 +50,11 @@ output "gwlb_subnet_ids" {
 # NETWORK FIREWALL OUTPUTS
 # ============================================================================
 
+output "network_firewall_name" {
+  description = "Name of the Network Firewall"
+  value       = aws_networkfirewall_firewall.main.name
+}
+
 output "network_firewall_id" {
   description = "ID of the Network Firewall"
   value       = aws_networkfirewall_firewall.main.id

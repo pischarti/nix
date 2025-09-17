@@ -84,38 +84,48 @@ terraform apply
 
 Due to the dynamic nature of Network Firewall endpoint creation, the firewall endpoints must be registered with the GWLB target group after the initial deployment.
 
-#### Option 1: Automated Script (Recommended)
-Use the provided helper script:
+#### Option 1: Two-Stage Terraform Deployment (Recommended)
+1. Deploy the initial infrastructure:
 ```bash
-./register_firewall_endpoints.sh
+terraform apply
 ```
 
-#### Option 2: Manual Registration
-1. Find the Network Firewall endpoint IPs:
+2. Discover the firewall endpoint IPs:
 ```bash
-# Get firewall subnet IDs
-terraform output firewall_subnet_ids_for_manual_registration
-
-# Find network interfaces in firewall subnets
-aws ec2 describe-network-interfaces \
-  --filters "Name=subnet-id,Values=<SUBNET_ID>" "Name=description,Values=*firewall*" \
-  --query 'NetworkInterfaces[*].PrivateIpAddress'
+ENDPOINT_IPS=$(./register_firewall_endpoints.sh)
+echo "Discovered endpoints: $ENDPOINT_IPS"
 ```
 
-2. Register the endpoints with the GWLB target group:
+3. Re-apply Terraform with the discovered IPs:
 ```bash
-# Get target group ARN
+terraform apply -var="firewall_endpoint_ips=$ENDPOINT_IPS"
+```
+
+#### Option 2: Manual AWS CLI Registration
+1. Discover endpoint IPs using the script:
+```bash
+ENDPOINT_IPS=$(./register_firewall_endpoints.sh)
 TARGET_GROUP_ARN=$(terraform output -raw gwlb_target_group_arn)
+```
 
-# Register each endpoint IP
-aws elbv2 register-targets \
-  --target-group-arn $TARGET_GROUP_ARN \
-  --targets Id=<ENDPOINT_IP>,Port=6081
+2. Register each endpoint:
+```bash
+for ip in $(echo $ENDPOINT_IPS | jq -r '.[]'); do
+  aws elbv2 register-targets \
+    --target-group-arn $TARGET_GROUP_ARN \
+    --targets Id=$ip,Port=6081
+done
 ```
 
 3. Verify target health:
 ```bash
 aws elbv2 describe-target-health --target-group-arn $TARGET_GROUP_ARN
+```
+
+#### Option 3: Direct Variable Setting
+If you already know the endpoint IPs, you can set them directly:
+```bash
+terraform apply -var='firewall_endpoint_ips=["10.1.1.100","10.1.2.100"]'
 ```
 
 ## Security Considerations
@@ -158,17 +168,39 @@ terraform destroy
 
 ### Common Issues
 
-1. **Connectivity Issues**
+1. **"No Network Firewall endpoints found" Error**
+   - **Cause**: Network Firewall endpoints take time to create after deployment
+   - **Solution**: 
+     ```bash
+     # Run the debug script for detailed information
+     ./debug_firewall_endpoints.sh
+     
+     # Wait longer and retry
+     ./register_firewall_endpoints.sh
+     
+     # Or check firewall status manually
+     aws network-firewall describe-firewall --firewall-name <firewall-name>
+     ```
+
+2. **Network Firewall Not Ready**
+   - **Cause**: Firewall is still in "PROVISIONING" state
+   - **Solution**: Wait 5-10 minutes for deployment to complete
+   - **Check Status**: 
+     ```bash
+     aws network-firewall describe-firewall --firewall-name $(terraform output -raw network_firewall_name)
+     ```
+
+3. **Connectivity Issues**
    - Verify GWLB endpoints are in "available" state
    - Check route table configurations
    - Ensure security groups allow required traffic
 
-2. **Firewall Not Inspecting Traffic**
+4. **Firewall Not Inspecting Traffic**
    - Verify Network Firewall is in "READY" state
    - Check firewall policy and rules
    - Confirm target group health checks are passing
 
-3. **High Latency**
+5. **High Latency**
    - Review firewall rules complexity
    - Consider stateless vs stateful rule performance
    - Monitor GWLB target group health

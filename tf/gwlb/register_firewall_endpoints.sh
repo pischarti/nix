@@ -1,113 +1,99 @@
 #!/bin/bash
 
-# Script to register Network Firewall endpoints with GWLB target group
-# This script should be run after the Terraform deployment is complete
+# Script to discover Network Firewall endpoint IPs
+# This script outputs the endpoint IPs that can be used for GWLB target registration
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-echo -e "${GREEN}Network Firewall Endpoint Registration Script${NC}"
-echo "=============================================="
-
-# Check if AWS CLI is installed
+# Check if required tools are installed
 if ! command -v aws &> /dev/null; then
-    echo -e "${RED}Error: AWS CLI is not installed${NC}"
+    echo "Error: AWS CLI is not installed" >&2
+    exit 1
+fi
+
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is not installed" >&2
     exit 1
 fi
 
 # Get Terraform outputs
-echo -e "${YELLOW}Getting Terraform outputs...${NC}"
-
-TARGET_GROUP_ARN=$(terraform output -raw gwlb_target_group_arn 2>/dev/null || echo "")
 FIREWALL_SUBNET_IDS=$(terraform output -json firewall_subnet_ids_for_manual_registration 2>/dev/null || echo "[]")
-FIREWALL_VPC_ID=$(terraform output -raw firewall_vpc_id 2>/dev/null || echo "")
-
-if [[ -z "$TARGET_GROUP_ARN" || -z "$FIREWALL_VPC_ID" ]]; then
-    echo -e "${RED}Error: Could not get required Terraform outputs. Make sure you're in the correct directory and Terraform has been applied.${NC}"
-    exit 1
-fi
-
-echo "Target Group ARN: $TARGET_GROUP_ARN"
-echo "Firewall VPC ID: $FIREWALL_VPC_ID"
+FIREWALL_NAME=$(terraform output -raw network_firewall_name 2>/dev/null || echo "")
 
 # Parse subnet IDs from JSON output
 SUBNET_IDS=$(echo "$FIREWALL_SUBNET_IDS" | jq -r '.[]' 2>/dev/null || echo "")
 
 if [[ -z "$SUBNET_IDS" ]]; then
-    echo -e "${RED}Error: Could not parse firewall subnet IDs${NC}"
+    echo "Error: Could not parse firewall subnet IDs" >&2
     exit 1
 fi
 
-echo -e "${YELLOW}Finding Network Firewall endpoints...${NC}"
+# Check Network Firewall status first
+if [[ -n "$FIREWALL_NAME" ]]; then
+    FIREWALL_STATUS=$(aws network-firewall describe-firewall --firewall-name "$FIREWALL_NAME" --query 'Firewall.FirewallStatus.Status' --output text 2>/dev/null || echo "UNKNOWN")
+    if [[ "$FIREWALL_STATUS" == "UNKNOWN" ]]; then
+        echo "Warning: Could not determine Network Firewall status. Proceeding with endpoint discovery..." >&2
+    elif [[ "$FIREWALL_STATUS" != "READY" ]]; then
+        echo "Error: Network Firewall is not ready (Status: $FIREWALL_STATUS). Please wait for deployment to complete." >&2
+        exit 1
+    fi
+else
+    echo "Warning: Could not get Network Firewall name from Terraform outputs. Proceeding with endpoint discovery..." >&2
+fi
 
 # Find Network Firewall endpoint network interfaces
 ENDPOINT_IPS=()
+
+# Try multiple description patterns as AWS may use different formats
+PATTERNS=(
+    "*firewall*"
+    "*Firewall*" 
+    "*FIREWALL*"
+    "*Network*Firewall*"
+    "*AWS*Network*Firewall*"
+    "*vpce-*"
+)
+
 for subnet_id in $SUBNET_IDS; do
-    echo "Checking subnet: $subnet_id"
+    FOUND_IN_SUBNET=false
     
-    # Find network interfaces in this subnet with firewall-related descriptions
-    NETWORK_INTERFACES=$(aws ec2 describe-network-interfaces \
-        --filters \
-            "Name=subnet-id,Values=$subnet_id" \
-            "Name=description,Values=*firewall*" \
-        --query 'NetworkInterfaces[*].{NetworkInterfaceId:NetworkInterfaceId,PrivateIpAddress:PrivateIpAddress,Description:Description}' \
-        --output json 2>/dev/null || echo "[]")
-    
-    # Extract private IP addresses
-    PRIVATE_IPS=$(echo "$NETWORK_INTERFACES" | jq -r '.[].PrivateIpAddress' 2>/dev/null || echo "")
-    
-    if [[ -n "$PRIVATE_IPS" ]]; then
-        for ip in $PRIVATE_IPS; do
-            if [[ "$ip" != "null" && -n "$ip" ]]; then
-                echo "Found firewall endpoint IP: $ip"
-                ENDPOINT_IPS+=("$ip")
-            fi
-        done
-    fi
+    for pattern in "${PATTERNS[@]}"; do
+        # Find network interfaces in this subnet with firewall-related descriptions
+        NETWORK_INTERFACES=$(aws ec2 describe-network-interfaces \
+            --filters \
+                "Name=subnet-id,Values=$subnet_id" \
+                "Name=description,Values=$pattern" \
+            --query 'NetworkInterfaces[?Status==`in-use`].PrivateIpAddress' \
+            --output text 2>/dev/null || echo "")
+        
+        # Add found IPs to array
+        if [[ -n "$NETWORK_INTERFACES" && "$NETWORK_INTERFACES" != "None" ]]; then
+            for ip in $NETWORK_INTERFACES; do
+                if [[ "$ip" != "None" && -n "$ip" ]]; then
+                    ENDPOINT_IPS+=("$ip")
+                    FOUND_IN_SUBNET=true
+                fi
+            done
+        fi
+        
+        # If we found interfaces with this pattern, no need to try others for this subnet
+        if [[ "$FOUND_IN_SUBNET" == true ]]; then
+            break
+        fi
+    done
 done
 
+# Remove duplicates
+if [[ ${#ENDPOINT_IPS[@]} -gt 0 ]]; then
+    UNIQUE_IPS=($(printf '%s\n' "${ENDPOINT_IPS[@]}" | sort -u))
+    ENDPOINT_IPS=("${UNIQUE_IPS[@]}")
+fi
+
 if [[ ${#ENDPOINT_IPS[@]} -eq 0 ]]; then
-    echo -e "${RED}Error: No Network Firewall endpoints found. Make sure the Network Firewall is fully deployed.${NC}"
-    echo -e "${YELLOW}You can check the firewall status with:${NC}"
-    echo "aws network-firewall describe-firewall --firewall-name <firewall-name>"
+    echo "Error: No Network Firewall endpoints found. Make sure the Network Firewall is fully deployed." >&2
+    echo "Tip: Run './debug_firewall_endpoints.sh' for detailed troubleshooting information." >&2
     exit 1
 fi
 
-echo -e "${GREEN}Found ${#ENDPOINT_IPS[@]} firewall endpoint(s)${NC}"
-
-# Register each endpoint with the target group
-echo -e "${YELLOW}Registering endpoints with GWLB target group...${NC}"
-
-for ip in "${ENDPOINT_IPS[@]}"; do
-    echo "Registering endpoint: $ip"
-    
-    aws elbv2 register-targets \
-        --target-group-arn "$TARGET_GROUP_ARN" \
-        --targets "Id=$ip,Port=6081" \
-        2>/dev/null || {
-            echo -e "${YELLOW}Warning: Failed to register $ip (it may already be registered)${NC}"
-        }
-done
-
-# Wait a moment for registration to process
-echo -e "${YELLOW}Waiting for target registration to process...${NC}"
-sleep 5
-
-# Check target health
-echo -e "${YELLOW}Checking target health...${NC}"
-TARGET_HEALTH=$(aws elbv2 describe-target-health \
-    --target-group-arn "$TARGET_GROUP_ARN" \
-    --query 'TargetHealthDescriptions[*].{Target:Target.Id,Health:TargetHealth.State}' \
-    --output table 2>/dev/null || echo "Could not retrieve target health")
-
-echo "$TARGET_HEALTH"
-
-echo -e "${GREEN}Registration complete!${NC}"
-echo -e "${YELLOW}Note: It may take a few minutes for targets to become healthy.${NC}"
-echo -e "${YELLOW}You can monitor target health with:${NC}"
-echo "aws elbv2 describe-target-health --target-group-arn $TARGET_GROUP_ARN"
+# Output the IPs as a JSON array for Terraform consumption
+printf '%s\n' "${ENDPOINT_IPS[@]}" | jq -R . | jq -s .

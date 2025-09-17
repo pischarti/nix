@@ -53,3 +53,9 @@ variable "gwlb_subnet_cidrs" {
   type        = list(string)
   default     = ["10.1.10.0/24", "10.1.20.0/24"]
 }
+
+variable "firewall_endpoint_ips" {
+  description = "List of Network Firewall endpoint IPs to register with GWLB target group. If empty, no registration will occur."
+  type        = list(string)
+  default     = []
+}
