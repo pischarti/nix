@@ -101,9 +101,17 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 
+  # Route traffic to firewall VPC through TGW for inspection
+  route {
+    cidr_block         = var.firewall_vpc_cidr
+    transit_gateway_id = aws_ec2_transit_gateway.main.id
+  }
+
   tags = merge(var.tags, {
     Name = "${var.tags.Name}-public-rt"
   })
+
+  depends_on = [aws_ec2_transit_gateway.main]
 }
 
 # Route Table for Private Subnets
