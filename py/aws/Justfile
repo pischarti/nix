@@ -1,0 +1,56 @@
+# Justfile for AWS VPC Deletion Tool
+# Run with: just <command>
+
+# Default recipe - show available commands
+default:
+    @just --list
+
+# Install dependencies
+install:
+    uv sync
+
+# Test AWS setup and credentials
+test-setup *ARGS:
+    uv run test_aws_setup.py {{ARGS}}
+
+# Run VPC deletion in dry-run mode
+dry-run VPC_ID *ARGS:
+    uv run delete_vpc.py {{VPC_ID}} --dry-run {{ARGS}}
+
+# Run VPC deletion (with confirmation)
+delete VPC_ID *ARGS:
+    uv run delete_vpc.py {{VPC_ID}} {{ARGS}}
+
+# Run VPC deletion without confirmation
+force-delete VPC_ID *ARGS:
+    uv run delete_vpc.py {{VPC_ID}} --force {{ARGS}}
+
+# Show help for the main script
+help:
+    uv run delete_vpc.py --help
+
+# Format code with black
+format:
+    uv run black delete_vpc.py test_aws_setup.py
+
+# Lint code with ruff
+lint:
+    uv run ruff check delete_vpc.py test_aws_setup.py
+
+# Run all quality checks
+check: format lint
+
+# Clean up generated files
+clean:
+    rm -rf .venv __pycache__ *.pyc
+    rm -rf build dist *.egg-info
+
+# Show example usage
+examples:
+    @echo "Example usage:"
+    @echo "  just test-setup                              # Test AWS credentials"
+    @echo "  just test-setup --region us-west-2          # Test with specific region"
+    @echo "  just dry-run vpc-12345678                    # Preview deletions"
+    @echo "  just dry-run vpc-12345678 --region us-west-2 # Preview with region"
+    @echo "  just delete vpc-12345678                     # Delete VPC (with confirmation)"
+    @echo "  just force-delete vpc-12345678               # Delete VPC (no confirmation)"
