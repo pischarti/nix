@@ -128,6 +128,71 @@ If you already know the endpoint IPs, you can set them directly:
 terraform apply -var='firewall_endpoint_ips=["10.1.1.100","10.1.2.100"]'
 ```
 
+## Testing the Infrastructure
+
+### Automated Traffic Testing
+
+The infrastructure includes a complete test setup with an EC2 instance in a private subnet and a Network Load Balancer for testing traffic flow through the firewall:
+
+```bash
+# Run the comprehensive traffic test
+./test_firewall_traffic.sh
+```
+
+This script will:
+- Test HTTP and HTTPS traffic flow through the firewall
+- Validate that traffic reaches the private instance
+- Perform performance testing
+- Provide troubleshooting information
+
+### Test Infrastructure Components
+
+- **EC2 Instance**: Amazon Linux 2023 instance in private subnet running HTTP (Apache) and HTTPS (Nginx) servers
+- **Network Load Balancer**: External-facing NLB in public subnets that forwards traffic to the private instance
+- **Security Groups**: Properly configured to allow traffic flow while maintaining security
+- **Key Pair**: Auto-generated SSH key pair for instance access
+
+### Manual Testing
+
+You can also test manually using the terraform outputs:
+
+```bash
+# Get the NLB DNS name
+NLB_DNS=$(terraform output -raw test_nlb_dns_name)
+
+# Test HTTP traffic
+curl http://$NLB_DNS
+
+# Test HTTPS traffic (self-signed certificate)
+curl -k https://$NLB_DNS
+
+# Test health check endpoint
+curl http://$NLB_DNS/health
+```
+
+### Traffic Flow Analysis
+
+The test setup validates this traffic flow:
+1. **Internet** → Network Load Balancer (Public Subnet)
+2. **NLB** → Gateway Load Balancer Endpoint
+3. **GWLB** → Network Firewall (Inspection VPC)
+4. **Firewall** → GWLB → Private Subnet
+5. **Private Subnet** → EC2 Instance (Web Server)
+
+### Infrastructure Validation
+
+For basic infrastructure validation, you can also use:
+
+```bash
+./test_traffic_inspection.sh
+```
+
+This script provides:
+- Infrastructure status overview
+- Routing table information
+- GWLB endpoint status
+- Manual testing instructions
+
 ## Security Considerations
 
 ### Network Firewall Rules

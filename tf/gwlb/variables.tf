@@ -59,3 +59,10 @@ variable "firewall_endpoint_ips" {
   type        = list(string)
   default     = []
 }
+
+# Test Infrastructure Variables
+variable "test_instance_type" {
+  description = "Instance type for the test EC2 instance in private subnet"
+  type        = string
+  default     = "t3.micro"
+}

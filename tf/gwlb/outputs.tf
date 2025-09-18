@@ -151,3 +151,82 @@ output "gwlb_route_table_ids" {
   description = "IDs of the GWLB subnet route tables"
   value       = aws_route_table.gwlb_subnet[*].id
 }
+
+# ==============================================================================
+# TEST INFRASTRUCTURE OUTPUTS
+# ==============================================================================
+
+output "test_instance_id" {
+  description = "ID of the test EC2 instance in private subnet"
+  value       = aws_instance.test_private.id
+}
+
+output "test_instance_private_ip" {
+  description = "Private IP address of the test EC2 instance"
+  value       = aws_instance.test_private.private_ip
+}
+
+output "test_nlb_dns_name" {
+  description = "DNS name of the test Network Load Balancer"
+  value       = aws_lb.test_nlb.dns_name
+}
+
+output "test_nlb_zone_id" {
+  description = "Zone ID of the test Network Load Balancer"
+  value       = aws_lb.test_nlb.zone_id
+}
+
+output "test_nlb_arn" {
+  description = "ARN of the test Network Load Balancer"
+  value       = aws_lb.test_nlb.arn
+}
+
+output "test_endpoints" {
+  description = "Test endpoints for traffic validation"
+  value = {
+    http_endpoint  = "http://${aws_lb.test_nlb.dns_name}"
+    https_endpoint = "https://${aws_lb.test_nlb.dns_name}"
+    health_check   = "http://${aws_lb.test_nlb.dns_name}/health"
+  }
+}
+
+output "test_key_pair" {
+  description = "Information about the test key pair"
+  value = {
+    key_name    = aws_key_pair.test_key.key_name
+    fingerprint = aws_key_pair.test_key.fingerprint
+  }
+}
+
+output "test_private_key" {
+  description = "Private key for SSH access to test instance (sensitive)"
+  value       = tls_private_key.test_key.private_key_pem
+  sensitive   = true
+}
+
+output "test_security_groups" {
+  description = "Security group IDs for test infrastructure"
+  value = {
+    private_instance_sg = aws_security_group.test_private_instance.id
+    nlb_sg              = aws_security_group.test_nlb.id
+  }
+}
+
+output "traffic_flow_summary" {
+  description = "Summary of expected traffic flow for testing"
+  value = {
+    description = "Traffic flow through Gateway Load Balancer and Network Firewall"
+    flow_steps = [
+      "1. Internet → Network Load Balancer (Public Subnet)",
+      "2. NLB → Gateway Load Balancer Endpoint",
+      "3. GWLB → Network Firewall (Inspection VPC)",
+      "4. Firewall → GWLB → Private Subnet",
+      "5. Private Subnet → EC2 Instance (Web Server)"
+    ]
+    test_commands = [
+      "curl http://${aws_lb.test_nlb.dns_name}",
+      "curl -k https://${aws_lb.test_nlb.dns_name}",
+      "curl http://${aws_lb.test_nlb.dns_name}/health"
+    ]
+  }
+}
