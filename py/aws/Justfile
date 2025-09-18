@@ -49,8 +49,7 @@ clean:
 examples:
     @echo "Example usage:"
     @echo "  just test-setup                              # Test AWS credentials"
-    @echo "  just test-setup --region us-west-2          # Test with specific region"
+    @echo "  export AWS_DEFAULT_REGION=us-west-2         # Set region via env var"
     @echo "  just dry-run vpc-12345678                    # Preview deletions"
-    @echo "  just dry-run vpc-12345678 --region us-west-2 # Preview with region"
     @echo "  just delete vpc-12345678                     # Delete VPC (with confirmation)"
     @echo "  just force-delete vpc-12345678               # Delete VPC (no confirmation)"

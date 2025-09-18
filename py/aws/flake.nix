@@ -16,7 +16,7 @@
       devShells = forAllSystems (system:
         let pkgs = import nixpkgs { 
           inherit system; 
-          config.allowUnfree = true; 
+          # config.allowUnfree = true; 
         };
         in {
           default = pkgs.mkShell {

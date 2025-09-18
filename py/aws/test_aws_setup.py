@@ -17,11 +17,11 @@ from botocore.exceptions import ClientError, NoCredentialsError, NoRegionError
 console = Console()
 
 
-def test_aws_credentials(profile: Optional[str] = None, region: Optional[str] = None) -> bool:
+def test_aws_credentials() -> bool:
     """Test AWS credentials and basic connectivity."""
     try:
-        # Create session
-        session = boto3.Session(profile_name=profile, region_name=region)
+        # Create session using environment variables
+        session = boto3.Session()
         
         # Test credentials with STS
         sts = session.client('sts')
@@ -45,8 +45,7 @@ def test_aws_credentials(profile: Optional[str] = None, region: Optional[str] = 
         console.print("[red]✗ AWS Region: Not configured[/red]")
         console.print("  Please set a default region using:")
         console.print("  - aws configure set region us-east-1")
-        console.print("  - AWS_DEFAULT_REGION environment variable")
-        console.print("  - --region parameter when running the script")
+        console.print("  - AWS_DEFAULT_REGION or AWS_REGION environment variable")
         return False
         
     except ClientError as e:
@@ -54,10 +53,10 @@ def test_aws_credentials(profile: Optional[str] = None, region: Optional[str] = 
         return False
 
 
-def test_ec2_permissions(profile: Optional[str] = None, region: Optional[str] = None) -> bool:
+def test_ec2_permissions() -> bool:
     """Test EC2 permissions required for VPC operations."""
     try:
-        session = boto3.Session(profile_name=profile, region_name=region)
+        session = boto3.Session()
         ec2 = session.client('ec2')
         
         # Test basic EC2 describe permissions
@@ -76,10 +75,10 @@ def test_ec2_permissions(profile: Optional[str] = None, region: Optional[str] = 
         return False
 
 
-def list_vpcs(profile: Optional[str] = None, region: Optional[str] = None) -> None:
+def list_vpcs() -> None:
     """List available VPCs for testing."""
     try:
-        session = boto3.Session(profile_name=profile, region_name=region)
+        session = boto3.Session()
         ec2 = session.client('ec2')
         
         response = ec2.describe_vpcs()
@@ -112,22 +111,27 @@ def list_vpcs(profile: Optional[str] = None, region: Optional[str] = None) -> No
 
 
 @click.command()
-@click.option('--region', '-r', help='AWS region to test')
-@click.option('--profile', '-p', help='AWS profile to test')
-def main(region: Optional[str], profile: Optional[str]):
-    """Test AWS setup for VPC deletion tool."""
+def main():
+    """Test AWS setup for VPC deletion tool.
+    
+    AWS region and profile are determined from environment variables:
+    - AWS_DEFAULT_REGION or AWS_REGION for region
+    - AWS_PROFILE for profile (optional)
+    """
+    import os
+    
     console.print(Panel.fit(
         "[bold blue]AWS Setup Test for VPC Deletion Tool[/bold blue]",
         border_style="blue"
     ))
     
     console.print(f"Testing AWS setup...")
-    console.print(f"Region: {region or 'default'}")
-    console.print(f"Profile: {profile or 'default'}")
+    console.print(f"Region: {os.environ.get('AWS_DEFAULT_REGION') or os.environ.get('AWS_REGION') or 'default'}")
+    console.print(f"Profile: {os.environ.get('AWS_PROFILE') or 'default'}")
     console.print()
     
     # Test credentials
-    creds_ok = test_aws_credentials(profile, region)
+    creds_ok = test_aws_credentials()
     if not creds_ok:
         console.print("\n[red]❌ AWS setup test failed![/red]")
         sys.exit(1)
@@ -135,7 +139,7 @@ def main(region: Optional[str], profile: Optional[str]):
     console.print()
     
     # Test EC2 permissions
-    perms_ok = test_ec2_permissions(profile, region)
+    perms_ok = test_ec2_permissions()
     if not perms_ok:
         console.print("\n[yellow]⚠️  Limited permissions detected[/yellow]")
         console.print("The VPC deletion tool may not work properly with current permissions.")
@@ -144,7 +148,7 @@ def main(region: Optional[str], profile: Optional[str]):
     
     # List VPCs for reference
     console.print("[blue]Available VPCs:[/blue]")
-    list_vpcs(profile, region)
+    list_vpcs()
     
     console.print()
     

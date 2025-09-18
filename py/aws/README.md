@@ -5,7 +5,7 @@ A comprehensive Python tool for deleting AWS VPCs and all their dependencies usi
 ## Features
 
 - **Complete VPC deletion**: Handles all AWS resources that would block VPC deletion from the console
-- **Dependency resolution**: Automatically deletes resources in the correct order
+- **Intelligent dependency resolution**: Automatically deletes resources in the correct order and handles complex dependencies like Gateway Load Balancers
 - **Rich CLI interface**: Beautiful terminal output with progress indicators
 - **Safety features**: Confirmation prompts and dry-run mode
 - **Comprehensive logging**: Detailed tracking of all deleted resources
@@ -16,12 +16,12 @@ A comprehensive Python tool for deleting AWS VPCs and all their dependencies usi
 The tool automatically detects and deletes the following AWS resources:
 
 - **Compute**: EC2 instances, Lambda functions
-- **Networking**: Internet Gateways, NAT Gateways, VPC Endpoints, Peering Connections
-- **Load Balancing**: Application Load Balancers, Network Load Balancers, Classic Load Balancers
+- **Networking**: Internet Gateways, NAT Gateways, VPC Endpoints, VPC Endpoint Service Configurations, Peering Connections
+- **Load Balancing**: Application Load Balancers, Network Load Balancers, Gateway Load Balancers, Classic Load Balancers
 - **VPN**: VPN Connections, VPN Gateways, Customer Gateways
 - **Storage**: RDS Subnet Groups
 - **Security**: Security Groups (custom), Network ACLs (custom)
-- **Infrastructure**: Subnets, Route Tables (custom), Elastic IPs
+- **Infrastructure**: Subnets, Route Tables (custom), Network Interfaces, Elastic IPs
 
 ## Prerequisites
 
@@ -61,8 +61,10 @@ The tool automatically detects and deletes the following AWS resources:
 5. **Test your AWS setup:**
    ```bash
    uv run test_aws_setup.py
-   # Or with specific region/profile:
-   uv run test_aws_setup.py --region us-west-2 --profile myprofile
+   # Or with specific region/profile via environment variables:
+   export AWS_DEFAULT_REGION=us-west-2
+   export AWS_PROFILE=myprofile
+   uv run test_aws_setup.py
    ```
 
 ### Quick Start with Just
@@ -104,8 +106,10 @@ python delete_vpc.py vpc-12345678
 ### Advanced Usage
 
 ```bash
-# Specify AWS region and profile
-uv run delete_vpc.py vpc-12345678 --region us-west-2 --profile my-profile
+# Set AWS region and profile via environment variables
+export AWS_DEFAULT_REGION=us-west-2
+export AWS_PROFILE=my-profile
+uv run delete_vpc.py vpc-12345678
 
 # Dry run mode (shows what would be deleted without actually deleting)
 uv run delete_vpc.py vpc-12345678 --dry-run
@@ -113,18 +117,27 @@ uv run delete_vpc.py vpc-12345678 --dry-run
 # Force deletion without confirmation prompt
 uv run delete_vpc.py vpc-12345678 --force
 
-# Combine options
-uv run delete_vpc.py vpc-12345678 --region us-east-1 --profile prod --dry-run
+# Combine options with environment variables
+export AWS_DEFAULT_REGION=us-east-1
+export AWS_PROFILE=prod
+uv run delete_vpc.py vpc-12345678 --dry-run
 ```
 
 ### Command Line Options
 
 - `VPC_ID` (required): The ID of the VPC to delete (e.g., vpc-12345678)
-- `--region`, `-r`: AWS region (defaults to your AWS CLI default region)
-- `--profile`, `-p`: AWS profile to use (defaults to your AWS CLI default profile)
 - `--dry-run`: Show what would be deleted without actually deleting anything
 - `--force`: Skip the confirmation prompt
 - `--help`: Show help message
+
+### Environment Variables
+
+The tool uses the following environment variables for AWS configuration:
+
+- `AWS_DEFAULT_REGION` or `AWS_REGION`: AWS region to use
+- `AWS_PROFILE`: AWS profile to use (optional, defaults to default profile)
+- `AWS_ACCESS_KEY_ID`: AWS access key (if not using profiles)
+- `AWS_SECRET_ACCESS_KEY`: AWS secret key (if not using profiles)
 
 ## AWS Permissions Required
 
@@ -153,11 +166,15 @@ The tool requires the following AWS permissions:
 
 ## Safety Features
 
-1. **VPC Verification**: Confirms the VPC exists before starting deletion
-2. **Confirmation Prompt**: Asks for explicit confirmation before deletion (unless `--force` is used)
-3. **Dry Run Mode**: Use `--dry-run` to see what would be deleted without making changes
-4. **Default VPC Warning**: Shows a warning if you're trying to delete a default VPC
-5. **Error Handling**: Continues with other resources even if some deletions fail
+1. **Configuration Validation**: Validates AWS credentials and region before starting
+2. **VPC Verification**: Confirms the VPC exists before starting deletion
+3. **Confirmation Prompt**: Asks for explicit confirmation before deletion (unless `--force` is used)
+4. **Dry Run Mode**: Use `--dry-run` to see what would be deleted without making changes
+5. **Default VPC Warning**: Shows a warning if you're trying to delete a default VPC
+6. **Error Handling**: Continues with other resources even if some deletions fail
+7. **Helpful Error Messages**: Provides clear guidance when configuration is missing
+8. **Batch Processing**: Efficiently handles bulk operations like VPC endpoint deletion
+9. **Automated Dependency Resolution**: Automatically handles complex dependencies like Gateway Load Balancer cleanup
 
 ## Example Output
 
