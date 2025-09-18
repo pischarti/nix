@@ -91,7 +91,7 @@ systemctl enable httpd
 cat > /etc/nginx/nginx.conf << 'EOF'
 user nginx;
 worker_processes auto;
-error_log /var/log/nginx/error.log;
+error_log /var/log/nginx/error.log warn;
 pid /run/nginx.pid;
 
 events {
@@ -110,25 +110,53 @@ http {
     tcp_nodelay on;
     keepalive_timeout 65;
     types_hash_max_size 2048;
+    server_tokens off;
 
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
 
+    # HTTPS Server
     server {
-        listen 443 ssl;
+        listen 443 ssl http2;
         server_name _;
         
+        # SSL Configuration
         ssl_certificate /etc/ssl/certs/server.crt;
         ssl_certificate_key /etc/ssl/private/server.key;
         
-        ssl_session_cache shared:SSL:1m;
-        ssl_session_timeout 5m;
-        ssl_ciphers HIGH:!aNULL:!MD5;
-        ssl_prefer_server_ciphers on;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384;
+        ssl_prefer_server_ciphers off;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+        ssl_session_tickets off;
 
+        # Security headers
+        add_header X-Frame-Options DENY;
+        add_header X-Content-Type-Options nosniff;
+        add_header X-XSS-Protection "1; mode=block";
+
+        # Document root
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Main location
         location / {
-            root /usr/share/nginx/html;
-            index index.html;
+            try_files $uri $uri/ =404;
+        }
+
+        # Health check endpoint for HTTPS
+        location /health {
+            access_log off;
+            return 200 "OK\n";
+            add_header Content-Type text/plain;
+        }
+
+        # Status endpoint
+        location /status {
+            access_log off;
+            return 200 "HTTPS Server Running\n";
+            add_header Content-Type text/plain;
         }
     }
 }
@@ -205,15 +233,97 @@ openssl s_client -connect [NLB-DNS-NAME]:443 -servername [NLB-DNS-NAME]
 </html>
 EOF
 
+# Test Nginx configuration before starting
+nginx -t
+if [ $? -ne 0 ]; then
+    echo "$(date): ERROR - Nginx configuration test failed" >> /var/log/user-data.log
+    systemctl status nginx >> /var/log/user-data.log 2>&1
+    exit 1
+fi
+
 # Start and enable Nginx
 systemctl start nginx
 systemctl enable nginx
 
-# Create a simple health check endpoint
+# Wait for Nginx to start and verify
+sleep 5
+if systemctl is-active --quiet nginx; then
+    echo "$(date): SUCCESS - Nginx started successfully" >> /var/log/user-data.log
+else
+    echo "$(date): ERROR - Nginx failed to start" >> /var/log/user-data.log
+    systemctl status nginx >> /var/log/user-data.log 2>&1
+    journalctl -u nginx --no-pager >> /var/log/user-data.log 2>&1
+fi
+
+# Create a simple health check endpoint for Apache
 mkdir -p /var/www/html/health
 echo "OK" > /var/www/html/health/index.html
+
+# Verify both servers are responding
+echo "$(date): Testing local HTTP server..." >> /var/log/user-data.log
+if curl -s http://localhost/health > /dev/null; then
+    echo "$(date): SUCCESS - HTTP health check passed" >> /var/log/user-data.log
+else
+    echo "$(date): ERROR - HTTP health check failed" >> /var/log/user-data.log
+fi
+
+echo "$(date): Testing local HTTPS server..." >> /var/log/user-data.log
+if curl -k -s https://localhost/health > /dev/null; then
+    echo "$(date): SUCCESS - HTTPS health check passed" >> /var/log/user-data.log
+else
+    echo "$(date): ERROR - HTTPS health check failed" >> /var/log/user-data.log
+fi
+
+# Check listening ports
+echo "$(date): Checking listening ports..." >> /var/log/user-data.log
+netstat -tlnp | grep -E ':(80|443) ' >> /var/log/user-data.log 2>&1
 
 # Log the completion
 echo "$(date): User data script completed successfully" >> /var/log/user-data.log
 echo "HTTP server: http://localhost" >> /var/log/user-data.log
 echo "HTTPS server: https://localhost" >> /var/log/user-data.log
+echo "Logs available at: /var/log/user-data.log" >> /var/log/user-data.log
+
+# Create a status script for troubleshooting
+cat > /home/ec2-user/check_servers.sh << 'EOF'
+#!/bin/bash
+echo "=== Server Status Check ==="
+echo "Date: $(date)"
+echo ""
+
+echo "=== Service Status ==="
+systemctl status httpd --no-pager
+echo ""
+systemctl status nginx --no-pager
+echo ""
+
+echo "=== Listening Ports ==="
+netstat -tlnp | grep -E ':(80|443) '
+echo ""
+
+echo "=== Health Checks ==="
+echo -n "HTTP Health Check: "
+if curl -s http://localhost/health > /dev/null; then
+    echo "PASS"
+else
+    echo "FAIL"
+fi
+
+echo -n "HTTPS Health Check: "
+if curl -k -s https://localhost/health > /dev/null; then
+    echo "PASS"
+else
+    echo "FAIL"
+fi
+
+echo ""
+echo "=== Recent Logs ==="
+echo "--- User Data Log (last 10 lines) ---"
+tail -10 /var/log/user-data.log
+echo ""
+echo "--- Nginx Error Log (last 10 lines) ---"
+tail -10 /var/log/nginx/error.log
+EOF
+
+chmod +x /home/ec2-user/check_servers.sh
+chown ec2-user:ec2-user /home/ec2-user/check_servers.sh

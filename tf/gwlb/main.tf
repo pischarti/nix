@@ -651,11 +651,13 @@ resource "aws_lb_target_group" "test_https" {
   health_check {
     enabled             = true
     healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 6
+    unhealthy_threshold = 3
+    timeout             = 10
     interval            = 30
-    protocol            = "TCP"
-    port                = "traffic-port"
+    protocol            = "HTTP"
+    port                = "80"
+    path                = "/health"
+    matcher             = "200"
   }
 
   tags = merge(var.tags, {
