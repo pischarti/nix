@@ -308,8 +308,22 @@ class VPCRouteViewer:
                     associated_subnets.append(association['SubnetId'])
             
             # Create route table info panel
-            info_text = f"Route Table: {rt_id}\nName: {rt_name}\nAssociated Subnets: {', '.join(associated_subnets) if associated_subnets else 'None'}"
+            info_text = f"Route Table: {rt_id}\nName: {rt_name}"
             console.print(Panel(info_text, title="Route Table Information", border_style="blue"))
+            
+            # Display associated subnets in a separate table if any exist
+            if associated_subnets:
+                subnet_table = Table(title=f"Associated Subnets for {rt_name}")
+                subnet_table.add_column("Subnet ID", style="cyan", width=20)
+                
+                for subnet_id in associated_subnets:
+                    subnet_table.add_row(subnet_id)
+                
+                console.print(subnet_table)
+                console.print()
+            else:
+                console.print(f"[yellow]No associated subnets for {rt_name}[/yellow]")
+                console.print()
             
             # Create routes table
             routes_table = Table(title=f"Routes in {rt_name}")
