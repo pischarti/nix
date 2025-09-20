@@ -225,10 +225,19 @@ class VPCRouteViewer:
             # Get associated route table
             route_table = subnet_to_route_table.get(subnet['SubnetId'], "Main Route Table")
             
+            # Get subnet name from tags
+            subnet_name = "No name"
+            if subnet.get('Tags'):
+                for tag in subnet['Tags']:
+                    if tag['Key'] == 'Name':
+                        subnet_name = tag['Value']
+                        break
+            
             subnet_data.append({
                 'subnet': subnet,
                 'type': subnet_type,
-                'route_table': route_table
+                'route_table': route_table,
+                'name': subnet_name
             })
         
         # Sort subnets based on the specified criteria
@@ -251,6 +260,7 @@ class VPCRouteViewer:
         
         table = Table(title=f"Subnets in VPC {self.vpc_id} (sorted by {sort_by})")
         table.add_column("Subnet ID", style="cyan", width=20)
+        table.add_column("Subnet Name", style="bright_cyan", width=20)
         table.add_column("CIDR Block", style="green", width=18)
         table.add_column("Availability Zone", style="blue", width=20)
         table.add_column("Type", style="magenta", width=10)
@@ -261,6 +271,7 @@ class VPCRouteViewer:
             subnet = data['subnet']
             table.add_row(
                 subnet['SubnetId'],
+                data['name'],
                 subnet['CidrBlock'],
                 subnet['AvailabilityZone'],
                 data['type'],
@@ -446,8 +457,17 @@ class VPCRouteViewer:
             
             route_table = subnet_to_route_table.get(subnet['SubnetId'], "Main Route Table")
             
+            # Get subnet name from tags
+            subnet_name = "No name"
+            if subnet.get('Tags'):
+                for tag in subnet['Tags']:
+                    if tag['Key'] == 'Name':
+                        subnet_name = tag['Value']
+                        break
+            
             processed_subnets.append({
                 'subnet_id': subnet['SubnetId'],
+                'name': subnet_name,
                 'cidr_block': subnet['CidrBlock'],
                 'availability_zone': subnet['AvailabilityZone'],
                 'type': subnet_type,
