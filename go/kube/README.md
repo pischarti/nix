@@ -154,11 +154,21 @@ The main package coverage is lower because the `main()` function and `imagesHand
 
 ## Architecture
 
-Built using GoFr's subcommand framework for clean CLI structure:
+Built using GoFr's subcommand framework with a modular package structure:
 
-- `main()`: Initializes GoFr CMD app and registers subcommands
-- `imagesHandler()`: Handles the images subcommand with flag parsing and K8s API calls
-- `getKubeConfig()`: Handles kubeconfig resolution and client setup
+### Package Organization
+
+- **`main`**: CLI application entry point and subcommand registration
+- **`pkg/config`**: Kubernetes configuration loading and management
+- **`pkg/container`**: Container image listing logic and command handling
+- **`pkg/print`**: Output formatting and display functions
+
+### Clean Separation of Concerns
+
+- **Main Package**: Initializes GoFr CMD app and registers subcommands
+- **Container Package**: Handles images command logic, argument parsing, and Kubernetes API interactions
+- **Config Package**: Manages Kubernetes configuration loading and client setup
+- **Print Package**: Handles all output formatting and display logic
 
 ## Contributing
 
