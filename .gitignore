@@ -11,3 +11,4 @@ terraform.tfstate
 **/*.info
 **/*.backup
 go/kube/kube
+go/glappy/glappy
