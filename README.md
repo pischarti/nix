@@ -17,16 +17,16 @@ A command-line tool for managing AWS resources, particularly focused on VPC subn
 **Usage:**
 ```bash
 # List subnets in a VPC
-aws subnets --vpc vpc-12345678
+gaws subnets --vpc vpc-12345678
 
 # Delete a subnet
-aws subnets delete --subnet-id subnet-12345678
+gaws subnets delete --subnet-id subnet-12345678
 
 # List Network Load Balancers
-aws nlb --vpc vpc-12345678
+gaws nlb --vpc vpc-12345678
 
 # Add subnets to NLBs
-aws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b
+gaws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b
 ```
 
 #### Kubernetes CLI (`go/kube/`)
@@ -94,7 +94,7 @@ terraform init
 
 ### Building and Releasing
 
-#### Go AWS CLI
+#### Go AWS CLI (gaws)
 
 The Go AWS CLI has automated build and release workflows:
 
@@ -117,9 +117,17 @@ Visit the [Releases page](https://github.com/your-org/nix/releases) to download 
 
 ```bash
 # Download for your platform
-wget https://github.com/your-org/nix/releases/download/v1.0.0/aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
-tar -xzf aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
-sudo mv aws /usr/local/bin/
+wget https://github.com/your-org/nix/releases/download/v1.0.0/gaws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+tar -xzf gaws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+sudo mv gaws /usr/local/bin/
+```
+
+### Usage
+
+```bash
+gaws --help
+gaws subnets --help
+gaws nlb --help
 ```
 
 ## Contributing

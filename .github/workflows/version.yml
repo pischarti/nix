@@ -18,6 +18,9 @@ on:
         default: true
         type: boolean
 
+permissions:
+  contents: write
+
 jobs:
   version:
     name: Create Version Tag

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Release script for Go AWS CLI
+# Release script for Go AWS CLI (gaws)
 # Usage: ./scripts/release.sh [patch|minor|major]
 
 set -e
