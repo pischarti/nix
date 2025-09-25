@@ -132,37 +132,37 @@ jobs:
           ### Downloads
           
           **Linux (amd64)**
-          - \`${{ env.BINARY_NAME }}-linux-amd64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-linux-amd64.tar.gz)
-          - SHA256: \`$(cat artifacts/aws-linux-amd64/aws-linux-amd64.sha256 | cut -d' ' -f1)\`
+          - \`${{ env.BINARY_NAME }}-linux-amd64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/${{ env.BINARY_NAME }}-linux-amd64.tar.gz)
+          - SHA256: \`$(cat artifacts/${{ env.BINARY_NAME }}-linux-amd64/${{ env.BINARY_NAME }}-linux-amd64.sha256 | cut -d' ' -f1)\`
           
           **Linux (arm64)**
-          - \`${{ env.BINARY_NAME }}-linux-arm64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-linux-arm64.tar.gz)
-          - SHA256: \`$(cat artifacts/aws-linux-arm64/aws-linux-arm64.sha256 | cut -d' ' -f1)\`
+          - \`${{ env.BINARY_NAME }}-linux-arm64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/${{ env.BINARY_NAME }}-linux-arm64.tar.gz)
+          - SHA256: \`$(cat artifacts/${{ env.BINARY_NAME }}-linux-arm64/${{ env.BINARY_NAME }}-linux-arm64.sha256 | cut -d' ' -f1)\`
           
           **macOS (amd64)**
-          - \`${{ env.BINARY_NAME }}-darwin-amd64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-darwin-amd64.tar.gz)
-          - SHA256: \`$(cat artifacts/aws-darwin-amd64/aws-darwin-amd64.sha256 | cut -d' ' -f1)\`
+          - \`${{ env.BINARY_NAME }}-darwin-amd64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/${{ env.BINARY_NAME }}-darwin-amd64.tar.gz)
+          - SHA256: \`$(cat artifacts/${{ env.BINARY_NAME }}-darwin-amd64/${{ env.BINARY_NAME }}-darwin-amd64.sha256 | cut -d' ' -f1)\`
           
           **macOS (arm64)**
-          - \`${{ env.BINARY_NAME }}-darwin-arm64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-darwin-arm64.tar.gz)
-          - SHA256: \`$(cat artifacts/aws-darwin-arm64/aws-darwin-arm64.sha256 | cut -d' ' -f1)\`
+          - \`${{ env.BINARY_NAME }}-darwin-arm64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/${{ env.BINARY_NAME }}-darwin-arm64.tar.gz)
+          - SHA256: \`$(cat artifacts/${{ env.BINARY_NAME }}-darwin-arm64/${{ env.BINARY_NAME }}-darwin-arm64.sha256 | cut -d' ' -f1)\`
           
           ### Installation
           
           \`\`\`bash
           # Download and extract for your platform
-          wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
-          tar -xzf aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
-          sudo mv aws /usr/local/bin/
+          wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/${{ env.BINARY_NAME }}-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+          tar -xzf ${{ env.BINARY_NAME }}-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+          sudo mv ${{ env.BINARY_NAME }} /usr/local/bin/
           \`\`\`
           
           ### Usage
           
           \`\`\`bash
-          aws --help
-          aws subnets --help
-          aws nlb --help
-          aws ecr --help
+          ${{ env.BINARY_NAME }} --help
+          ${{ env.BINARY_NAME }} subnets --help
+          ${{ env.BINARY_NAME }} nlb --help
+          ${{ env.BINARY_NAME }} ecr --help
           \`\`\`
           
           ### ECR Image Management
@@ -171,19 +171,19 @@ jobs:
           
           \`\`\`bash
           # List images in a repository
-          aws ecr --repository my-repo
+          ${{ env.BINARY_NAME }} ecr --repository my-repo
           
           # List images from all repositories
-          aws ecr --all
+          ${{ env.BINARY_NAME }} ecr --all
           
           # Filter by tag and sort by date
-          aws ecr --repository my-repo --tag latest --sort pushed
+          ${{ env.BINARY_NAME }} ecr --repository my-repo --tag latest --sort pushed
           
           # Show images older than a reference tag
-          aws ecr --repository my-repo --older-than latest
+          ${{ env.BINARY_NAME }} ecr --repository my-repo --older-than latest
           
           # Output in YAML format for programmatic processing
-          aws ecr --all --output yaml
+          ${{ env.BINARY_NAME }} ecr --all --output yaml
           \`\`\`
           EOF
           
