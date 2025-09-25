@@ -7,11 +7,12 @@ This repository contains various development projects and tools organized by lan
 ### Go Projects
 
 #### AWS CLI (`go/aws/`)
-A command-line tool for managing AWS resources, particularly focused on VPC subnets and Network Load Balancers.
+A command-line tool for managing AWS resources, particularly focused on VPC subnets, Network Load Balancers, and ECR image management.
 
 **Features:**
 - List, delete, and check dependencies for AWS subnets
 - Manage Network Load Balancers and their subnet associations
+- List and filter ECR images with advanced filtering and sorting
 - Built with the GoFr framework for clean CLI structure
 
 **Usage:**
@@ -27,6 +28,18 @@ gaws nlb --vpc vpc-12345678
 
 # Add subnets to NLBs
 gaws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b
+
+# List ECR images
+gaws ecr --repository my-repo
+
+# List images from all repositories
+gaws ecr --all
+
+# Filter images older than a reference tag
+gaws ecr --repository my-repo --older-than latest
+
+# Output in YAML format
+gaws ecr --all --output yaml
 ```
 
 #### Kubernetes CLI (`go/kube/`)

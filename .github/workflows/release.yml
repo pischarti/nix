@@ -162,6 +162,28 @@ jobs:
           aws --help
           aws subnets --help
           aws nlb --help
+          aws ecr --help
+          \`\`\`
+          
+          ### ECR Image Management
+          
+          List ECR images with filtering and sorting:
+          
+          \`\`\`bash
+          # List images in a repository
+          aws ecr --repository my-repo
+          
+          # List images from all repositories
+          aws ecr --all
+          
+          # Filter by tag and sort by date
+          aws ecr --repository my-repo --tag latest --sort pushed
+          
+          # Show images older than a reference tag
+          aws ecr --repository my-repo --older-than latest
+          
+          # Output in YAML format for programmatic processing
+          aws ecr --all --output yaml
           \`\`\`
           EOF
           
