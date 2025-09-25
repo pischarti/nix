@@ -1,0 +1,40 @@
+{
+  "name": "nuxt-ui-template-saas",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@googlemaps/markerclusterer": "^2.6.2",
+    "@iconify-json/lucide": "^1.2.68",
+    "@iconify-json/simple-icons": "^1.2.53",
+    "@nuxt/content": "^3.7.1",
+    "@nuxt/image": "^1.11.0",
+    "@nuxt/scripts": "0.12.1",
+    "@nuxt/test-utils": "3.19.2",
+    "@nuxt/ui": "^4.0.0",
+    "@standard-schema/spec": "^1.0.0",
+    "@unhead/vue": "^2.0.17",
+    "@vueuse/nuxt": "^13.9.0",
+    "better-sqlite3": "^12.4.1",
+    "nuxt": "^4.1.2",
+    "nuxt-og-image": "^5.1.11",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.9.0",
+    "eslint": "^9.36.0",
+    "typescript": "^5.9.2",
+    "vue-tsc": "^3.0.8"
+  },
+  "resolutions": {
+    "unimport": "4.1.1"
+  },
+  "packageManager": "pnpm@10.17.1"
+}
