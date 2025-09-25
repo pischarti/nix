@@ -17,6 +17,10 @@ go build -o aws .
 
 ### Subnets Command
 
+Manage AWS subnets with comprehensive functionality for listing, deleting, and checking dependencies.
+
+#### List Subnets
+
 List all subnets in a VPC with optional filtering and sorting capabilities.
 
 ```bash
@@ -35,8 +39,30 @@ List all subnets in a VPC with optional filtering and sorting capabilities.
 ./aws subnets --vpc vpc-12345678 --zone us-east-1a --sort name
 ```
 
+#### Delete Subnet
+
+Delete a subnet by ID with dependency checking and safety features.
+
+```bash
+# Delete subnet with confirmation prompt
+./aws subnets delete --subnet-id subnet-12345678
+
+# Delete subnet without confirmation (force mode)
+./aws subnets delete --subnet-id subnet-12345678 --force
+```
+
+#### Check Dependencies
+
+Check what resources are preventing a subnet from being deleted.
+
+```bash
+# Check dependencies for a subnet
+./aws subnets check-dependencies --subnet-id subnet-12345678
+```
+
 #### Options
 
+**List Subnets:**
 - `--vpc VPC_ID` (required): VPC ID to list subnets for
 - `--zone AZ` (optional): Filter by availability zone (e.g., us-east-1a)
 - `--sort SORT_BY` (optional): Sort by one of:
@@ -45,21 +71,35 @@ List all subnets in a VPC with optional filtering and sorting capabilities.
   - `name`: Sort by subnet name (from Name tag)
   - `type`: Sort by subnet type (from Type tag)
 
+**Delete Subnet:**
+- `--subnet-id SUBNET_ID` (required): Subnet ID to delete
+- `--force` (optional): Skip confirmation prompt
+
+**Check Dependencies:**
+- `--subnet-id SUBNET_ID` (required): Subnet ID to check dependencies for
+
 #### Output
 
-The command displays a formatted table with the following columns:
+**List Subnets:** Displays a formatted table with the following columns:
 - Subnet ID
-- VPC ID
 - CIDR Block
 - AZ (Availability Zone)
 - Name (from Name tag)
 - State
 - Type (from Type tag, defaults to "subnet")
+- Tags (relevant tags like kubernetes.io/role/elb, each on a separate line)
+
+**Delete Subnet:** Shows confirmation prompts and success/error messages.
+
+**Check Dependencies:** Displays subnet information and dependency analysis:
+- Subnet details (VPC, CIDR, AZ, State)
+- List of dependencies preventing deletion (if any)
+- Success message if no dependencies found
 
 #### Examples
 
 ```bash
-# Show help
+# Show help for all subnets commands
 ./aws subnets --help
 
 # List all subnets in VPC, sorted by CIDR
@@ -67,6 +107,15 @@ The command displays a formatted table with the following columns:
 
 # List subnets in specific AZ, sorted by name
 ./aws subnets --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2a --sort name
+
+# Check dependencies before deleting a subnet
+./aws subnets check-dependencies --subnet-id subnet-0a87931be8d84c3df
+
+# Delete subnet with confirmation
+./aws subnets delete --subnet-id subnet-0a87931be8d84c3df
+
+# Delete subnet without confirmation
+./aws subnets delete --subnet-id subnet-0a87931be8d84c3df --force
 ```
 
 ## AWS Permissions
@@ -80,7 +129,11 @@ The tool requires the following AWS IAM permissions:
         {
             "Effect": "Allow",
             "Action": [
-                "ec2:DescribeSubnets"
+                "ec2:DescribeSubnets",
+                "ec2:DescribeInstances",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DescribeVpcEndpoints",
+                "ec2:DeleteSubnet"
             ],
             "Resource": "*"
         }
@@ -88,11 +141,66 @@ The tool requires the following AWS IAM permissions:
 }
 ```
 
+**Permission Details:**
+- `ec2:DescribeSubnets` - List subnets and their properties
+- `ec2:DescribeInstances` - Check for EC2 instances in subnets
+- `ec2:DescribeNetworkInterfaces` - Check for network interfaces
+- `ec2:DescribeVpcEndpoints` - Check for VPC endpoints
+- `ec2:DeleteSubnet` - Delete subnets (only needed for delete operations)
+
 ## Features
 
+### Subnet Listing
 - **CIDR-based sorting**: Intelligently sorts CIDR blocks by network address and prefix length
 - **Zone filtering**: Filter subnets by availability zone
 - **Flexible sorting**: Sort by CIDR, availability zone, name, or type
-- **Tag support**: Displays subnet names and types from AWS tags
+- **Tag support**: Displays subnet names, types, and relevant tags from AWS
 - **Formatted output**: Uses go-pretty for clean, colored table output
+
+### Subnet Deletion
+- **Dependency checking**: Automatically checks for resources that prevent deletion
+- **Safety features**: Confirmation prompts and force mode options
+- **Comprehensive checks**: Validates EC2 instances, network interfaces, VPC endpoints, and load balancers
+- **Clear error messages**: Provides specific guidance on what needs to be removed first
+
+### Dependency Analysis
+- **Pre-deletion validation**: Check what resources are blocking subnet deletion
+- **Detailed reporting**: Shows specific resource IDs and types preventing deletion
+- **Resource identification**: Identifies EC2 instances, ENIs, VPC endpoints, and load balancers
+
+### General
 - **Error handling**: Comprehensive error handling with helpful messages
+- **Nested commands**: Intuitive command structure with sub-commands
+- **Help system**: Detailed help for all commands and options
+
+## Troubleshooting
+
+### Common Issues
+
+**"Subnet has dependencies and cannot be deleted"**
+```bash
+# Check what's preventing deletion
+./aws subnets check-dependencies --subnet-id subnet-12345678
+
+# Remove the dependencies (e.g., terminate instances, delete endpoints)
+# Then retry deletion
+./aws subnets delete --subnet-id subnet-12345678
+```
+
+**"Subnet not found"**
+- Verify the subnet ID is correct
+- Check that the subnet exists in your current AWS region
+- Ensure you have the necessary permissions
+
+**"Failed to load AWS config"**
+- Configure AWS credentials using `aws configure`
+- Set environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+- Use IAM roles if running on EC2
+
+### Dependency Types
+
+The tool checks for these dependency types:
+- **EC2 Instances**: Running, pending, or stopping instances
+- **Network Interfaces**: Attached Elastic Network Interfaces (ENIs)
+- **VPC Endpoints**: Active VPC endpoints
+- **Load Balancers**: Detected via ENI descriptions
