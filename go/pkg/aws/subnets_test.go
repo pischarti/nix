@@ -251,3 +251,134 @@ func TestListSubnetsOutputFormat(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDeleteSubnetArgs(t *testing.T) {
+	tests := []struct {
+		name          string
+		args          []string
+		expectedID    string
+		expectedForce bool
+	}{
+		{
+			name:          "valid subnet id",
+			args:          []string{"aws", "subnets", "delete", "--subnet-id", "subnet-12345678"},
+			expectedID:    "subnet-12345678",
+			expectedForce: false,
+		},
+		{
+			name:          "subnet id with force",
+			args:          []string{"aws", "subnets", "delete", "--subnet-id", "subnet-12345678", "--force"},
+			expectedID:    "subnet-12345678",
+			expectedForce: true,
+		},
+		{
+			name:          "force flag first",
+			args:          []string{"aws", "subnets", "delete", "--force", "--subnet-id", "subnet-12345678"},
+			expectedID:    "subnet-12345678",
+			expectedForce: true,
+		},
+		{
+			name:          "no subnet id",
+			args:          []string{"aws", "subnets", "delete"},
+			expectedID:    "",
+			expectedForce: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			subnetID, force, err := parseDeleteSubnetArgs(tt.args)
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if subnetID != tt.expectedID {
+				t.Errorf("SubnetID = %v, want %v", subnetID, tt.expectedID)
+			}
+			if force != tt.expectedForce {
+				t.Errorf("Force = %v, want %v", force, tt.expectedForce)
+			}
+		})
+	}
+}
+
+func TestDeleteSubnetHelp(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "help flag -h",
+			args: []string{"aws", "subnets", "delete", "-h"},
+		},
+		{
+			name: "help flag --help",
+			args: []string{"aws", "subnets", "delete", "--help"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save original args
+			originalArgs := os.Args
+			defer func() {
+				os.Args = originalArgs
+			}()
+
+			// Set test args
+			os.Args = tt.args
+
+			// Test that the function doesn't panic with help flags
+			result, err := DeleteSubnet(nil)
+
+			// Help should return nil, nil
+			if result != nil {
+				t.Errorf("Expected result to be nil for help, got %v", result)
+			}
+			if err != nil {
+				t.Errorf("Expected error to be nil for help, got %v", err)
+			}
+		})
+	}
+}
+
+func TestDeleteSubnetErrorHandling(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		expectedErr string
+	}{
+		{
+			name:        "missing subnet-id parameter",
+			args:        []string{"aws", "subnets", "delete"},
+			expectedErr: "subnet-id parameter is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save original args
+			originalArgs := os.Args
+			defer func() {
+				os.Args = originalArgs
+			}()
+
+			// Set test args
+			os.Args = tt.args
+
+			// Test the function
+			_, err := DeleteSubnet(nil)
+
+			if err == nil {
+				t.Errorf("Expected error for test %s, but got none", tt.name)
+				return
+			}
+
+			if !strings.Contains(err.Error(), tt.expectedErr) {
+				t.Errorf("Expected error to contain %q, got %q", tt.expectedErr, err.Error())
+			}
+		})
+	}
+}
