@@ -8,6 +8,10 @@ A Kubernetes command-line tool built with GoFr that provides utilities for manag
 
 List all container images running in your Kubernetes cluster with various filtering and display options.
 
+### Services Subcommand
+
+List all Kubernetes services with annotations matching specified criteria. By default shows all services with any annotations, or filter by specific annotation keys or values. Automatically excludes `last-applied-configuration` annotations for cleaner output.
+
 #### Usage
 
 ```bash
@@ -90,6 +94,94 @@ List all container images running in your Kubernetes cluster with various filter
 # └───────────┴─────────────────┘
 ```
 
+#### Usage
+
+```bash
+# List services with any annotations across all namespaces (default)
+./kube services
+
+# List services in a specific namespace
+./kube services --namespace default
+
+# List services across all namespaces (explicit)
+./kube services --all-namespaces
+
+# Display output in table format
+./kube services --table
+
+# Display with different table styles
+./kube services --table --style simple
+./kube services --table --style box
+./kube services --table --style rounded
+./kube services --table --style colored
+
+# Sort output by different criteria
+./kube services --sort namespace    # Default: sort by namespace
+./kube services --sort name         # Sort by service name alphabetically
+./kube services --sort none         # No sorting (original order)
+
+# Filter by specific annotation key or value
+./kube services --annotation-value "aws-load-balancer"
+./kube services --annotation-value "nlb"
+./kube services --annotation-value "internet-facing"
+
+# Show help
+./kube services --help
+```
+
+#### Options
+
+- `--namespace, -n`: Query a specific namespace (default: all namespaces)
+- `--all-namespaces, -A`: Query across all namespaces (default behavior)
+- `--table, -t`: Display output in table format with namespace, name, type, and annotations columns
+- `--style`: Table style - `simple`, `box`, `rounded`, or `colored` (default: colored)
+- `--sort`: Sort order - `namespace` (default), `name`, or `none`
+- `--annotation-value`: Filter by annotation key or value containing this text (case-insensitive)
+- `--help, -h`: Show help information
+
+#### Examples
+
+```bash
+# Get services with any annotations across the entire cluster
+./kube services --all-namespaces
+
+# List services in the kube-system namespace
+./kube services --namespace kube-system
+
+# Display services in table format
+./kube services --table --namespace default
+
+# Different table styles
+./kube services --table --style simple
+./kube services --table --style box
+./kube services --table --style rounded
+
+# Combine sorting with other options
+./kube services --table --sort name --style box
+./kube services --sort name --namespace default
+
+# Filter by specific annotation keys or values
+./kube services --annotation-value "aws-load-balancer" --table
+./kube services --annotation-value "nlb" --table
+./kube services --annotation-value "internet-facing" --namespace production
+
+# Output format when using --table (colored style):
+# ┌───────────┬──────────┬──────┬──────────────────────────────────────────────┐
+# │ NAMESPACE │ NAME     │ TYPE │ ANNOTATIONS                                 │
+# ├───────────┼──────────┼──────┼──────────────────────────────────────────────┤
+# │ default   │ my-svc   │ LoadBalancer │ service.beta.kubernetes.io/aws-load-balancer-type=nlb │
+# │           │          │      │ service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing │
+# │ default   │ api-svc  │ LoadBalancer │ custom.annotation=value │
+# └───────────┴──────────┴──────┴──────────────────────────────────────────────┘
+
+# Output format when using list mode:
+# default/my-svc (LoadBalancer):
+#   service.beta.kubernetes.io/aws-load-balancer-type=nlb
+#   service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing
+# default/api-svc (LoadBalancer):
+#   custom.annotation=value
+```
+
 ## Building
 
 ```bash
@@ -104,7 +196,7 @@ go build -o kube .
 
 - Go 1.21+
 - Access to a Kubernetes cluster (via kubeconfig or in-cluster config)
-- Appropriate RBAC permissions to list pods
+- Appropriate RBAC permissions to list pods and services
 
 ## Configuration
 
@@ -126,6 +218,7 @@ The project includes comprehensive unit tests covering:
 
 - **Config Package** (`pkg/config`): Tests for Kubernetes configuration loading
 - **Main Package** (`kube`): Tests for CLI argument parsing, validation, and output formatting
+- **Container Package** (`pkg/container`): Tests for images and services command handlers, argument parsing, and AWS load balancer annotation filtering
 - **Integration Tests**: Tests that verify actual function behavior and output
 
 ### Running Tests
@@ -166,7 +259,7 @@ Built using GoFr's subcommand framework with a modular package structure:
 ### Clean Separation of Concerns
 
 - **Main Package**: Initializes GoFr CMD app and registers subcommands
-- **Container Package**: Handles images command logic, argument parsing, and Kubernetes API interactions
+- **Container Package**: Handles images and services command logic, argument parsing, and Kubernetes API interactions
 - **Config Package**: Manages Kubernetes configuration loading and client setup
 - **Print Package**: Handles all output formatting and display logic
 

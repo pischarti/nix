@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // PrintImagesTable prints images in a table format with namespace information
@@ -170,4 +172,178 @@ func PrintImagesHelp() {
 	fmt.Println("  --style           Table style: simple, box, rounded, colored (default)")
 	fmt.Println("  --sort            Sort order: namespace (default), image, none")
 	fmt.Println("  --help, -h        Show this help message")
+}
+
+// ServiceInfo represents a service with its key information
+type ServiceInfo struct {
+	Namespace   string
+	Name        string
+	Type        string
+	Annotations []string
+}
+
+// PrintServicesTable prints services in a table format
+func PrintServicesTable(services []corev1.Service, style string, sortBy string) {
+	// Convert services to ServiceInfo structs
+	var serviceInfos []ServiceInfo
+	for _, service := range services {
+		var allAnnotations []string
+		for key, value := range service.Annotations {
+			// Exclude last-applied-configuration annotations
+			if !strings.Contains(strings.ToLower(key), "last-applied-configuration") {
+				allAnnotations = append(allAnnotations, fmt.Sprintf("%s=%s", key, value))
+			}
+		}
+
+		serviceInfos = append(serviceInfos, ServiceInfo{
+			Namespace:   service.Namespace,
+			Name:        service.Name,
+			Type:        string(service.Spec.Type),
+			Annotations: allAnnotations,
+		})
+	}
+
+	// Sort services based on sortBy parameter
+	switch sortBy {
+	case "name":
+		sort.Slice(serviceInfos, func(i, j int) bool {
+			return serviceInfos[i].Name < serviceInfos[j].Name
+		})
+	case "namespace":
+		sort.Slice(serviceInfos, func(i, j int) bool {
+			if serviceInfos[i].Namespace == serviceInfos[j].Namespace {
+				return serviceInfos[i].Name < serviceInfos[j].Name
+			}
+			return serviceInfos[i].Namespace < serviceInfos[j].Namespace
+		})
+	case "none":
+		// No sorting
+	default:
+		sort.Slice(serviceInfos, func(i, j int) bool {
+			if serviceInfos[i].Namespace == serviceInfos[j].Namespace {
+				return serviceInfos[i].Name < serviceInfos[j].Name
+			}
+			return serviceInfos[i].Namespace < serviceInfos[j].Namespace
+		})
+	}
+
+	// Create table
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+
+	// Set table style based on parameter
+	switch style {
+	case "simple":
+		t.SetStyle(table.StyleDefault)
+	case "box":
+		t.SetStyle(table.StyleDouble)
+	case "rounded":
+		t.SetStyle(table.StyleRounded)
+	case "colored", "color":
+		t.SetStyle(table.StyleColoredBright)
+	default:
+		t.SetStyle(table.StyleColoredBright)
+	}
+
+	// Add headers
+	t.AppendHeader(table.Row{"NAMESPACE", "NAME", "TYPE", "ANNOTATIONS"})
+
+	// Add rows
+	for _, info := range serviceInfos {
+		if len(info.Annotations) == 0 {
+			t.AppendRow(table.Row{info.Namespace, info.Name, info.Type, "-"})
+		} else {
+			for i, annotation := range info.Annotations {
+				if i == 0 {
+					// First annotation includes namespace, name, and type
+					t.AppendRow(table.Row{info.Namespace, info.Name, info.Type, annotation})
+				} else {
+					// Subsequent annotations have empty cells for namespace, name, type
+					t.AppendRow(table.Row{"", "", "", annotation})
+				}
+			}
+		}
+	}
+
+	// Render table
+	t.Render()
+}
+
+// PrintServicesList prints services in a simple list format
+func PrintServicesList(services []corev1.Service, sortBy string) {
+	// Convert services to ServiceInfo structs for sorting
+	var serviceInfos []ServiceInfo
+	for _, service := range services {
+		var allAnnotations []string
+		for key, value := range service.Annotations {
+			// Exclude last-applied-configuration annotations
+			if !strings.Contains(strings.ToLower(key), "last-applied-configuration") {
+				allAnnotations = append(allAnnotations, fmt.Sprintf("%s=%s", key, value))
+			}
+		}
+
+		serviceInfos = append(serviceInfos, ServiceInfo{
+			Namespace:   service.Namespace,
+			Name:        service.Name,
+			Type:        string(service.Spec.Type),
+			Annotations: allAnnotations,
+		})
+	}
+
+	// Sort services based on sortBy parameter
+	switch sortBy {
+	case "name":
+		sort.Slice(serviceInfos, func(i, j int) bool {
+			return serviceInfos[i].Name < serviceInfos[j].Name
+		})
+	case "namespace":
+		sort.Slice(serviceInfos, func(i, j int) bool {
+			if serviceInfos[i].Namespace == serviceInfos[j].Namespace {
+				return serviceInfos[i].Name < serviceInfos[j].Name
+			}
+			return serviceInfos[i].Namespace < serviceInfos[j].Namespace
+		})
+	case "none":
+		// No sorting - keep original order
+	default:
+		sort.Slice(serviceInfos, func(i, j int) bool {
+			if serviceInfos[i].Namespace == serviceInfos[j].Namespace {
+				return serviceInfos[i].Name < serviceInfos[j].Name
+			}
+			return serviceInfos[i].Namespace < serviceInfos[j].Namespace
+		})
+	}
+
+	// Print services
+	for _, info := range serviceInfos {
+		if len(info.Annotations) == 0 {
+			fmt.Printf("%s/%s (%s): -\n", info.Namespace, info.Name, info.Type)
+		} else {
+			fmt.Printf("%s/%s (%s):\n", info.Namespace, info.Name, info.Type)
+			for _, annotation := range info.Annotations {
+				fmt.Printf("  %s\n", annotation)
+			}
+		}
+	}
+}
+
+// PrintServicesHelp prints the help information for the services command
+func PrintServicesHelp() {
+	fmt.Println("Usage: kube services [--namespace NAMESPACE | --all-namespaces] [--table] [--style STYLE] [--sort SORT] [--annotation-value VALUE]")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --namespace, -n    Query a specific namespace")
+	fmt.Println("  --all-namespaces, -A  Query across all namespaces (default)")
+	fmt.Println("  --table, -t       Display output in table format")
+	fmt.Println("  --style           Table style: simple, box, rounded, colored (default)")
+	fmt.Println("  --sort            Sort order: namespace (default), name, none")
+	fmt.Println("  --annotation-value  Filter by annotation key or value containing this text (case-insensitive)")
+	fmt.Println("  --help, -h        Show this help message")
+	fmt.Println()
+	fmt.Println("Note: last-applied-configuration annotations are automatically excluded from output.")
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  ./kube services                                    # Show all services with annotations")
+	fmt.Println("  ./kube services --annotation-value aws-load-balancer  # Filter by annotation containing 'aws-load-balancer'")
+	fmt.Println("  ./kube services --annotation-value nlb             # Filter by annotation containing 'nlb'")
 }

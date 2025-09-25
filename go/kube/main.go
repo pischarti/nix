@@ -14,5 +14,10 @@ func main() {
 		gofr.AddHelp("Usage: kube images [--namespace NAMESPACE | --all-namespaces] [--by-pod] [--table] [--style STYLE] [--sort SORT]"),
 	)
 
+	app.SubCommand("services", container.ServicesHandler,
+		gofr.AddDescription("List Kubernetes services with annotations matching specified criteria"),
+		gofr.AddHelp("Usage: kube services [--namespace NAMESPACE | --all-namespaces] [--table] [--style STYLE] [--sort SORT] [--annotation-value VALUE]"),
+	)
+
 	app.Run()
 }
