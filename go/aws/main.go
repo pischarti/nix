@@ -43,5 +43,19 @@ func main() {
 			"  aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a --nlb-name my-nlb"),
 	)
 
+	// Add ecr command with nested sub-commands
+	app.SubCommand("ecr", aws.ECRRouter,
+		gofr.AddDescription("Manage AWS ECR repositories - list image versions and tags"),
+		gofr.AddHelp("Usage: aws ecr [COMMAND]\n"+
+			"Commands:\n"+
+			"  list               List all image versions in an ECR repository (default)\n\n"+
+			"Examples:\n"+
+			"  aws ecr --repository my-repo\n"+
+			"  aws ecr list --repository my-repo\n"+
+			"  aws ecr list --repository my-repo --tag latest\n"+
+			"  aws ecr list --repository my-repo --sort tag\n"+
+			"  aws ecr list --repository my-repo --sort size"),
+	)
+
 	app.Run()
 }

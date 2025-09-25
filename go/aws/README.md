@@ -4,6 +4,7 @@ A Go-based command-line tool for interacting with AWS services using the gofr fr
 
 ## 🆕 Recent Updates
 
+- **ECR Image Management**: Added `ecr` command to list ECR image versions and tags with filtering and sorting
 - **NLB Subnet Management**: Added `remove-subnet` command to remove subnets from Network Load Balancers by availability zone
 - **Enhanced NLB Listing**: Improved table display with AZ/subnet pairs and smart name fallbacks
 - **Comprehensive Documentation**: Updated with troubleshooting guides and best practices
@@ -28,6 +29,10 @@ Manage AWS subnets with comprehensive functionality for listing, deleting, and c
 ### NLB Command
 
 Manage AWS Network Load Balancers with functionality for listing NLBs and managing subnets.
+
+### ECR Command
+
+Manage AWS ECR repositories with functionality for listing image versions and tags.
 
 #### List Subnets
 
@@ -132,6 +137,26 @@ Remove subnets from Network Load Balancers in a specific VPC and availability zo
 ./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a --force
 ```
 
+#### List ECR Images
+
+List all image versions in an ECR repository with optional filtering and sorting capabilities.
+
+```bash
+# Basic usage - list all images in a repository
+./aws ecr --repository my-repo
+
+# Filter by specific tag
+./aws ecr --repository my-repo --tag latest
+
+# Sort by different criteria
+./aws ecr --repository my-repo --sort tag
+./aws ecr --repository my-repo --sort size
+# Default is sorted by push date (newest first)
+
+# Combine filtering and sorting
+./aws ecr --repository my-repo --tag v1.0 --sort pushed
+```
+
 #### Options
 
 **List Subnets:**
@@ -175,6 +200,14 @@ Remove subnets from Network Load Balancers in a specific VPC and availability zo
 - `--zone AZ` (required): Availability zone of the subnet to remove
 - `--nlb-name NAME` (optional): Specific NLB name to target (removes from all NLBs if not specified)
 - `--force` (optional): Skip confirmation prompt
+
+**List ECR Images:**
+- `--repository REPO_NAME` (required): ECR repository name
+- `--tag TAG` (optional): Filter by specific image tag
+- `--sort SORT_BY` (optional): Sort by one of:
+  - `pushed` (default): Sort by push date (newest first)
+  - `tag`: Sort by image tag
+  - `size`: Sort by image size (largest first)
 
 #### Output
 
@@ -220,6 +253,14 @@ Remove subnets from Network Load Balancers in a specific VPC and availability zo
 - Confirmation prompt (unless --force is used)
 - Success/failure messages for each NLB
 - Summary of completed operations
+
+**List ECR Images:** Displays a formatted table with the following columns:
+- Repository (repository name)
+- Tag (image tag, shows "<untagged>" for images without tags)
+- Digest (image digest, truncated for display)
+- Pushed At (push timestamp)
+- Size (human-readable image size)
+- Manifest (image manifest media type)
 
 #### Examples
 
@@ -274,6 +315,23 @@ Remove subnets from Network Load Balancers in a specific VPC and availability zo
 
 # Remove subnets without confirmation
 ./aws nlb remove-subnet --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2a --force
+
+# Show help for ecr commands
+./aws ecr --help
+
+# List all images in a repository
+./aws ecr --repository my-app
+
+# List images with specific tag
+./aws ecr --repository my-app --tag latest
+
+# List images sorted by tag
+./aws ecr --repository my-app --sort tag
+
+# List images sorted by size
+./aws ecr --repository my-app --sort size
+
+# Default is sorted by push date (newest first)
 ```
 
 ## AWS Permissions
@@ -294,7 +352,9 @@ The tool requires the following AWS IAM permissions:
                 "ec2:DeleteSubnet",
                 "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeTags",
-                "elasticloadbalancing:SetSubnets"
+                "elasticloadbalancing:SetSubnets",
+                "ecr:DescribeImages",
+                "ecr:DescribeRepositories"
             ],
             "Resource": "*"
         }
@@ -311,6 +371,8 @@ The tool requires the following AWS IAM permissions:
 - `elasticloadbalancing:DescribeLoadBalancers` - List load balancers and their properties
 - `elasticloadbalancing:DescribeTags` - Get tags for load balancers
 - `elasticloadbalancing:SetSubnets` - Modify NLB subnet configuration (only needed for remove-subnet operations)
+- `ecr:DescribeImages` - List ECR images and their properties
+- `ecr:DescribeRepositories` - List ECR repositories (only needed for ECR operations)
 
 ## Features
 
@@ -348,6 +410,13 @@ The tool requires the following AWS IAM permissions:
 - **Confirmation prompts**: Interactive confirmation before making changes
 - **Force mode**: Skip confirmation for automated operations
 - **Detailed reporting**: Shows which NLBs will be modified and operation results
+
+### ECR Image Listing
+- **Repository filtering**: List images from specific ECR repositories
+- **Tag filtering**: Filter images by specific tags
+- **Flexible sorting**: Sort by tag, push date, or image size
+- **Human-readable output**: Formatted table with digest truncation and size formatting
+- **Untagged image support**: Shows untagged images with special indicator
 
 ### General
 - **Error handling**: Comprehensive error handling with helpful messages
@@ -398,6 +467,16 @@ The tool requires the following AWS IAM permissions:
 - Configure AWS credentials using `aws configure`
 - Set environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 - Use IAM roles if running on EC2
+
+**"Repository not found"**
+- Verify the repository name is correct
+- Check that the repository exists in your current AWS region
+- Ensure you have the necessary permissions
+
+**"No images found in the repository"**
+- Verify the repository name is correct
+- Check that the repository contains images
+- Ensure you have the necessary permissions
 
 ### Dependency Types
 
@@ -467,6 +546,13 @@ The tool checks for these dependency types:
 ./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a --nlb-name my-nlb --force
 ```
 
+### ECR Commands
+```bash
+# List ECR images
+./aws ecr --repository my-repo
+./aws ecr list --repository my-repo --tag latest --sort pushed
+```
+
 ### Help Commands
 ```bash
 # General help
@@ -479,4 +565,7 @@ The tool checks for these dependency types:
 # NLB help
 ./aws nlb --help
 ./aws nlb remove-subnet --help
+
+# ECR help
+./aws ecr --help
 ```
