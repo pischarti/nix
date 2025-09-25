@@ -46,6 +46,42 @@ func ParseSubnetsArgs(args []string) (*SubnetsOptions, error) {
 	return opts, nil
 }
 
+// ParseNLBArgs parses command line arguments for the nlb command
+func ParseNLBArgs(args []string) (*NLBOptions, error) {
+	opts := &NLBOptions{
+		SortBy: "name", // Default sort by name
+	}
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--vpc":
+			if i+1 < len(args) {
+				i++
+				opts.VPCID = args[i]
+			}
+		case "--zone":
+			if i+1 < len(args) {
+				i++
+				opts.Zone = args[i]
+			}
+		case "--sort":
+			if i+1 < len(args) {
+				i++
+				opts.SortBy = args[i]
+			}
+		}
+	}
+
+	// Validate sort option
+	validSorts := map[string]bool{"name": true, "state": true, "type": true, "scheme": true, "created": true}
+	if !validSorts[opts.SortBy] {
+		return nil, fmt.Errorf("invalid sort option '%s'. Valid options: name, state, type, scheme, created", opts.SortBy)
+	}
+
+	return opts, nil
+}
+
 // SortSubnets sorts a slice of SubnetInfo based on the specified sort criteria
 func SortSubnets(subnets []SubnetInfo, sortBy string) {
 	switch sortBy {
@@ -161,4 +197,30 @@ func ConvertEC2SubnetsToSubnetInfo(ec2Subnets []types.Subnet) []SubnetInfo {
 	}
 
 	return subnets
+}
+
+// SortNLBs sorts a slice of NLBInfo based on the specified sort criteria
+func SortNLBs(nlbs []NLBInfo, sortBy string) {
+	switch sortBy {
+	case "name":
+		sort.Slice(nlbs, func(i, j int) bool {
+			return nlbs[i].Name < nlbs[j].Name
+		})
+	case "state":
+		sort.Slice(nlbs, func(i, j int) bool {
+			return nlbs[i].State < nlbs[j].State
+		})
+	case "type":
+		sort.Slice(nlbs, func(i, j int) bool {
+			return nlbs[i].Type < nlbs[j].Type
+		})
+	case "scheme":
+		sort.Slice(nlbs, func(i, j int) bool {
+			return nlbs[i].Scheme < nlbs[j].Scheme
+		})
+	case "created":
+		sort.Slice(nlbs, func(i, j int) bool {
+			return nlbs[i].CreatedTime < nlbs[j].CreatedTime
+		})
+	}
 }

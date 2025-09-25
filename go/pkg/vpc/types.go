@@ -17,3 +17,25 @@ type SubnetsOptions struct {
 	Zone   string
 	SortBy string
 }
+
+// NLBInfo represents information about an AWS Network Load Balancer
+type NLBInfo struct {
+	LoadBalancerArn   string
+	Name              string
+	DNSName           string
+	State             string
+	Type              string
+	Scheme            string
+	VPCID             string
+	AvailabilityZones string
+	Subnets           string
+	CreatedTime       string
+	Tags              string
+}
+
+// NLBOptions represents the parsed command line options for the nlb command
+type NLBOptions struct {
+	VPCID  string
+	Zone   string
+	SortBy string
+}

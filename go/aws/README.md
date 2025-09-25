@@ -19,6 +19,10 @@ go build -o aws .
 
 Manage AWS subnets with comprehensive functionality for listing, deleting, and checking dependencies.
 
+### NLB Command
+
+Manage AWS Network Load Balancers with functionality for listing NLBs in a VPC.
+
 #### List Subnets
 
 List all subnets in a VPC with optional filtering and sorting capabilities.
@@ -60,6 +64,26 @@ Check what resources are preventing a subnet from being deleted.
 ./aws subnets check-dependencies --subnet-id subnet-12345678
 ```
 
+#### List NLBs
+
+List all Network Load Balancers in a VPC with optional filtering and sorting capabilities.
+
+```bash
+# Basic usage - list all NLBs in a VPC
+./aws nlb --vpc vpc-12345678
+
+# Filter by availability zone
+./aws nlb --vpc vpc-12345678 --zone us-east-1a
+
+# Sort by different criteria
+./aws nlb --vpc vpc-12345678 --sort state
+./aws nlb --vpc vpc-12345678 --sort name
+./aws nlb --vpc vpc-12345678 --sort scheme
+
+# Combine filtering and sorting
+./aws nlb --vpc vpc-12345678 --zone us-east-1a --sort state
+```
+
 #### Options
 
 **List Subnets:**
@@ -78,6 +102,16 @@ Check what resources are preventing a subnet from being deleted.
 **Check Dependencies:**
 - `--subnet-id SUBNET_ID` (required): Subnet ID to check dependencies for
 
+**List NLBs:**
+- `--vpc VPC_ID` (required): VPC ID to list NLBs for
+- `--zone AZ` (optional): Filter by availability zone (e.g., us-east-1a)
+- `--sort SORT_BY` (optional): Sort by one of:
+  - `name` (default): Sort by NLB name
+  - `state`: Sort by NLB state
+  - `type`: Sort by NLB type
+  - `scheme`: Sort by NLB scheme (internal/external)
+  - `created`: Sort by creation time
+
 #### Output
 
 **List Subnets:** Displays a formatted table with the following columns:
@@ -95,6 +129,14 @@ Check what resources are preventing a subnet from being deleted.
 - Subnet details (VPC, CIDR, AZ, State)
 - List of dependencies preventing deletion (if any)
 - Success message if no dependencies found
+
+**List NLBs:** Displays a formatted table with the following columns:
+- Name (from Name tag)
+- State
+- Scheme (internal/external)
+- AZ / Subnet (availability zone and subnet pairs, each on a separate line)
+- Created Time
+- Tags (relevant tags like kubernetes.io/role/elb, each on a separate line)
 
 #### Examples
 
@@ -116,6 +158,18 @@ Check what resources are preventing a subnet from being deleted.
 
 # Delete subnet without confirmation
 ./aws subnets delete --subnet-id subnet-0a87931be8d84c3df --force
+
+# Show help for nlb commands
+./aws nlb --help
+
+# List all NLBs in VPC
+./aws nlb --vpc vpc-0a1b2c3d4e5f6789
+
+# List NLBs in specific AZ, sorted by state
+./aws nlb --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2a --sort state
+
+# List NLBs sorted by creation time
+./aws nlb --vpc vpc-0a1b2c3d4e5f6789 --sort created
 ```
 
 ## AWS Permissions
@@ -133,7 +187,9 @@ The tool requires the following AWS IAM permissions:
                 "ec2:DescribeInstances",
                 "ec2:DescribeNetworkInterfaces",
                 "ec2:DescribeVpcEndpoints",
-                "ec2:DeleteSubnet"
+                "ec2:DeleteSubnet",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:DescribeTags"
             ],
             "Resource": "*"
         }
@@ -147,6 +203,8 @@ The tool requires the following AWS IAM permissions:
 - `ec2:DescribeNetworkInterfaces` - Check for network interfaces
 - `ec2:DescribeVpcEndpoints` - Check for VPC endpoints
 - `ec2:DeleteSubnet` - Delete subnets (only needed for delete operations)
+- `elasticloadbalancing:DescribeLoadBalancers` - List load balancers and their properties
+- `elasticloadbalancing:DescribeTags` - Get tags for load balancers
 
 ## Features
 
@@ -167,6 +225,14 @@ The tool requires the following AWS IAM permissions:
 - **Pre-deletion validation**: Check what resources are blocking subnet deletion
 - **Detailed reporting**: Shows specific resource IDs and types preventing deletion
 - **Resource identification**: Identifies EC2 instances, ENIs, VPC endpoints, and load balancers
+
+### NLB Listing
+- **VPC filtering**: List only Network Load Balancers in a specific VPC
+- **Zone filtering**: Filter NLBs by availability zone
+- **Flexible sorting**: Sort by name, state, type, scheme, or creation time
+- **Tag support**: Displays NLB names and relevant tags from AWS
+- **Formatted output**: Uses go-pretty for clean, colored table output
+- **Comprehensive info**: Shows DNS names, subnets, availability zones, and more
 
 ### General
 - **Error handling**: Comprehensive error handling with helpful messages

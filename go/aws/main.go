@@ -23,5 +23,18 @@ func main() {
 			"  aws subnets check-dependencies --subnet-id subnet-12345678"),
 	)
 
+	// Add nlb command with nested sub-commands
+	app.SubCommand("nlb", aws.NLBRouter,
+		gofr.AddDescription("Manage AWS Network Load Balancers - list NLBs in a VPC"),
+		gofr.AddHelp("Usage: aws nlb [COMMAND]\n"+
+			"Commands:\n"+
+			"  list               List all Network Load Balancers in a VPC (default)\n\n"+
+			"Examples:\n"+
+			"  aws nlb --vpc vpc-12345678\n"+
+			"  aws nlb list --vpc vpc-12345678\n"+
+			"  aws nlb list --vpc vpc-12345678 --zone us-east-1a\n"+
+			"  aws nlb list --vpc vpc-12345678 --sort state"),
+	)
+
 	app.Run()
 }
