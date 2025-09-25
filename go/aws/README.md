@@ -2,6 +2,12 @@
 
 A Go-based command-line tool for interacting with AWS services using the gofr framework.
 
+## 🆕 Recent Updates
+
+- **NLB Subnet Management**: Added `remove-subnet` command to remove subnets from Network Load Balancers by availability zone
+- **Enhanced NLB Listing**: Improved table display with AZ/subnet pairs and smart name fallbacks
+- **Comprehensive Documentation**: Updated with troubleshooting guides and best practices
+
 ## Prerequisites
 
 - Go 1.25.1 or later
@@ -21,7 +27,7 @@ Manage AWS subnets with comprehensive functionality for listing, deleting, and c
 
 ### NLB Command
 
-Manage AWS Network Load Balancers with functionality for listing NLBs in a VPC.
+Manage AWS Network Load Balancers with functionality for listing NLBs and managing subnets.
 
 #### List Subnets
 
@@ -84,6 +90,48 @@ List all Network Load Balancers in a VPC with optional filtering and sorting cap
 ./aws nlb --vpc vpc-12345678 --zone us-east-1a --sort state
 ```
 
+#### Add Subnet to NLB
+
+Add subnets from a specific zone to NLBs in a VPC. This is useful when you need to add subnets before removing others.
+
+```bash
+# Add subnets from a zone to all NLBs in a VPC
+./aws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b
+
+# Add subnets to a specific NLB only
+./aws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b --nlb-name my-nlb
+
+# Add subnets without confirmation prompt
+./aws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b --force
+```
+
+#### Check NLB Associations
+
+Check for service associations that might prevent subnet removal from NLBs.
+
+```bash
+# Check all NLBs in a VPC for associations
+./aws nlb check-associations --vpc vpc-12345678
+
+# Check a specific NLB for associations
+./aws nlb check-associations --vpc vpc-12345678 --nlb-name my-nlb
+```
+
+#### Remove Subnet from NLB
+
+Remove subnets from Network Load Balancers in a specific VPC and availability zone.
+
+```bash
+# Remove subnets in a specific zone from all NLBs in a VPC
+./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a
+
+# Remove subnets from a specific NLB only
+./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a --nlb-name my-nlb
+
+# Remove subnets without confirmation prompt
+./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a --force
+```
+
 #### Options
 
 **List Subnets:**
@@ -112,6 +160,22 @@ List all Network Load Balancers in a VPC with optional filtering and sorting cap
   - `scheme`: Sort by NLB scheme (internal/external)
   - `created`: Sort by creation time
 
+**Add Subnet to NLB:**
+- `--vpc VPC_ID` (required): VPC ID containing the NLB
+- `--zone AZ` (required): Availability zone to add subnets from
+- `--nlb-name NAME` (optional): Specific NLB name to target (adds to all NLBs if not specified)
+- `--force` (optional): Skip confirmation prompt
+
+**Check NLB Associations:**
+- `--vpc VPC_ID` (required): VPC ID containing the NLB
+- `--nlb-name NAME` (optional): Specific NLB name to check (checks all NLBs if not specified)
+
+**Remove Subnet from NLB:**
+- `--vpc VPC_ID` (required): VPC ID containing the NLB
+- `--zone AZ` (required): Availability zone of the subnet to remove
+- `--nlb-name NAME` (optional): Specific NLB name to target (removes from all NLBs if not specified)
+- `--force` (optional): Skip confirmation prompt
+
 #### Output
 
 **List Subnets:** Displays a formatted table with the following columns:
@@ -137,6 +201,25 @@ List all Network Load Balancers in a VPC with optional filtering and sorting cap
 - AZ / Subnet (availability zone and subnet pairs, each on a separate line)
 - Created Time
 - Tags (relevant tags like kubernetes.io/role/elb, each on a separate line)
+
+**Add Subnet to NLB:** Shows confirmation prompts and operation results:
+- List of NLBs that will be modified
+- List of subnets that will be added
+- Confirmation prompt (unless --force is used)
+- Success/failure messages for each NLB
+- Summary of completed operations
+
+**Check NLB Associations:** Shows detailed association analysis:
+- NLB name, ARN, and current state
+- Detection of listeners and target groups (indicators of service usage)
+- Specific commands to check for Kubernetes and ECS associations
+- Guidance on resolving common association issues
+
+**Remove Subnet from NLB:** Shows confirmation prompts and operation results:
+- List of NLBs that will be modified
+- Confirmation prompt (unless --force is used)
+- Success/failure messages for each NLB
+- Summary of completed operations
 
 #### Examples
 
@@ -170,6 +253,27 @@ List all Network Load Balancers in a VPC with optional filtering and sorting cap
 
 # List NLBs sorted by creation time
 ./aws nlb --vpc vpc-0a1b2c3d4e5f6789 --sort created
+
+# Add subnets from another zone before removing subnets
+./aws nlb add-subnet --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2b
+
+# Add subnets to a specific NLB
+./aws nlb add-subnet --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2b --nlb-name my-nlb
+
+# Check for NLB associations before removing subnets
+./aws nlb check-associations --vpc vpc-0a1b2c3d4e5f6789
+
+# Check specific NLB for associations
+./aws nlb check-associations --vpc vpc-0a1b2c3d4e5f6789 --nlb-name my-nlb
+
+# Remove subnets from all NLBs in a zone
+./aws nlb remove-subnet --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2a
+
+# Remove subnets from a specific NLB
+./aws nlb remove-subnet --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2a --nlb-name my-nlb
+
+# Remove subnets without confirmation
+./aws nlb remove-subnet --vpc vpc-0a1b2c3d4e5f6789 --zone us-west-2a --force
 ```
 
 ## AWS Permissions
@@ -189,7 +293,8 @@ The tool requires the following AWS IAM permissions:
                 "ec2:DescribeVpcEndpoints",
                 "ec2:DeleteSubnet",
                 "elasticloadbalancing:DescribeLoadBalancers",
-                "elasticloadbalancing:DescribeTags"
+                "elasticloadbalancing:DescribeTags",
+                "elasticloadbalancing:SetSubnets"
             ],
             "Resource": "*"
         }
@@ -205,6 +310,7 @@ The tool requires the following AWS IAM permissions:
 - `ec2:DeleteSubnet` - Delete subnets (only needed for delete operations)
 - `elasticloadbalancing:DescribeLoadBalancers` - List load balancers and their properties
 - `elasticloadbalancing:DescribeTags` - Get tags for load balancers
+- `elasticloadbalancing:SetSubnets` - Modify NLB subnet configuration (only needed for remove-subnet operations)
 
 ## Features
 
@@ -232,7 +338,16 @@ The tool requires the following AWS IAM permissions:
 - **Flexible sorting**: Sort by name, state, type, scheme, or creation time
 - **Tag support**: Displays NLB names and relevant tags from AWS
 - **Formatted output**: Uses go-pretty for clean, colored table output
-- **Comprehensive info**: Shows DNS names, subnets, availability zones, and more
+- **Comprehensive info**: Shows subnets, availability zones, and more
+- **Smart naming**: Falls back to Load Balancer ARN when Name tag is missing
+
+### NLB Subnet Management
+- **Zone-based removal**: Remove subnets from NLBs by availability zone
+- **Selective targeting**: Target specific NLBs by name or all NLBs in a VPC
+- **Safety checks**: Prevents removing all subnets from an NLB
+- **Confirmation prompts**: Interactive confirmation before making changes
+- **Force mode**: Skip confirmation for automated operations
+- **Detailed reporting**: Shows which NLBs will be modified and operation results
 
 ### General
 - **Error handling**: Comprehensive error handling with helpful messages
@@ -258,6 +373,27 @@ The tool requires the following AWS IAM permissions:
 - Check that the subnet exists in your current AWS region
 - Ensure you have the necessary permissions
 
+**"No NLBs found in VPC"**
+- Verify the VPC ID is correct
+- Check that the VPC contains Network Load Balancers
+- Ensure you have the necessary permissions
+
+**"No NLBs found with subnets in zone"**
+- Verify the availability zone is correct
+- Check that NLBs in the VPC have subnets in the specified zone
+- Use `aws nlb list --vpc VPC_ID --zone AZ` to see which NLBs have subnets in that zone
+
+**"Cannot remove all subnets from NLB"**
+- NLBs must have at least one subnet
+- Remove subnets from other zones first, or add subnets to other zones before removing the last subnet
+
+**"ResourceInUse: Subnets cannot be removed from load balancer because the load balancer is currently associated with another service"**
+- The NLB is being used by another AWS service (Kubernetes, ECS, etc.)
+- Check for Kubernetes service associations: `kubectl get services -o wide`
+- Check for ECS service associations: `aws ecs describe-services --cluster CLUSTER_NAME`
+- Delete or modify the associated service first
+- Wait a few minutes for the association to be removed, then retry
+
 **"Failed to load AWS config"**
 - Configure AWS credentials using `aws configure`
 - Set environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
@@ -270,3 +406,77 @@ The tool checks for these dependency types:
 - **Network Interfaces**: Attached Elastic Network Interfaces (ENIs)
 - **VPC Endpoints**: Active VPC endpoints
 - **Load Balancers**: Detected via ENI descriptions
+
+### NLB Subnet Management Best Practices
+
+**Before removing subnets:**
+1. List NLBs to understand current configuration: `./aws nlb list --vpc VPC_ID`
+2. Check which NLBs have subnets in the target zone: `./aws nlb list --vpc VPC_ID --zone AZ`
+3. Check for service associations that might prevent removal:
+   - Kubernetes: `kubectl get services -o wide | grep LOADBALANCER`
+   - ECS: `aws ecs describe-services --cluster CLUSTER_NAME --services SERVICE_NAME`
+4. Ensure NLBs will have remaining subnets in other zones after removal
+
+**Safe removal workflow:**
+```bash
+# 1. Check current NLB configuration
+./aws nlb list --vpc vpc-12345678
+
+# 2. See which NLBs will be affected
+./aws nlb list --vpc vpc-12345678 --zone us-east-1a
+
+# 3. Remove subnets (with confirmation)
+./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a
+
+# 4. Verify changes
+./aws nlb list --vpc vpc-12345678
+```
+
+## Quick Reference
+
+### Subnet Commands
+```bash
+# List subnets
+./aws subnets --vpc vpc-12345678
+./aws subnets list --vpc vpc-12345678 --zone us-east-1a --sort name
+
+# Delete subnet
+./aws subnets delete --subnet-id subnet-12345678
+./aws subnets delete --subnet-id subnet-12345678 --force
+
+# Check dependencies
+./aws subnets check-dependencies --subnet-id subnet-12345678
+```
+
+### NLB Commands
+```bash
+# List NLBs
+./aws nlb --vpc vpc-12345678
+./aws nlb list --vpc vpc-12345678 --zone us-east-1a --sort state
+
+# Add subnets to NLBs
+./aws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b
+./aws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b --nlb-name my-nlb
+
+# Check for associations
+./aws nlb check-associations --vpc vpc-12345678
+./aws nlb check-associations --vpc vpc-12345678 --nlb-name my-nlb
+
+# Remove subnets from NLBs
+./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a
+./aws nlb remove-subnet --vpc vpc-12345678 --zone us-east-1a --nlb-name my-nlb --force
+```
+
+### Help Commands
+```bash
+# General help
+./aws --help
+
+# Subnet help
+./aws subnets --help
+./aws subnets delete --help
+
+# NLB help
+./aws nlb --help
+./aws nlb remove-subnet --help
+```
