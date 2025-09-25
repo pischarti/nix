@@ -21,7 +21,7 @@ A Go implementation of the classic Flappy Bird game using the Ebiten 2D game lib
 ### Prerequisites
 
 - Go 1.21 or later
-- Ebiten v2 game library
+- Ebiten v2 game library (managed by root go.mod)
 
 ### Running the Game
 
@@ -29,21 +29,26 @@ A Go implementation of the classic Flappy Bird game using the Ebiten 2D game lib
 # Navigate to the glappy directory
 cd go/glappy
 
-# Install dependencies
-go mod tidy
-
-# Run the game
+# Run the game (uses root go.mod)
 go run .
+
+# Or from root directory
+cd /path/to/nix
+go run ./go/glappy
 ```
 
 ### Building
 
 ```bash
-# Build the executable
+# Build the executable (uses root go.mod)
 go build -o glappy .
 
 # Run the built executable
 ./glappy
+
+# Or build from root directory
+cd /path/to/nix
+go build -o glappy ./go/glappy
 ```
 
 ## Game Mechanics

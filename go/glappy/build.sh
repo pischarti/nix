@@ -23,11 +23,11 @@ fi
 
 echo "✅ Go version $GO_VERSION detected"
 
-# Install dependencies
+# Install dependencies (using root go.mod)
 echo "📦 Installing dependencies..."
-go mod tidy
+cd .. && go mod tidy && cd glappy
 
-# Build the game
+# Build the game (now using internal/game package)
 echo "🔨 Building glappy..."
 go build -o glappy .
 

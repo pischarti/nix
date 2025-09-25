@@ -1,12 +1,20 @@
 package game
 
 import (
+	"fmt"
 	"image/color"
+	"log"
 	"math/rand"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+
+	"github.com/pischarti/nix/go/glappy/internal/bird"
 )
 
 const (
@@ -15,11 +23,8 @@ const (
 	ScreenHeight = 600
 
 	// Bird properties
-	BirdSize      = 20
-	BirdJumpSpeed = -8
-	BirdGravity   = 0.5
-	BirdStartX    = 100
-	BirdStartY    = ScreenHeight / 2
+	BirdStartX = 100
+	BirdStartY = ScreenHeight / 2
 
 	// Pipe properties
 	PipeWidth     = 50
@@ -27,56 +32,6 @@ const (
 	PipeSpeed     = 3
 	PipeSpawnDist = 300
 )
-
-// Bird represents the player character
-type Bird struct {
-	X, Y      float64
-	Velocity  float64
-	Size      int
-	gravity   float64
-	jumpSpeed float64
-}
-
-// NewBird creates a new bird at the specified position
-func NewBird(x, y float64) *Bird {
-	return &Bird{
-		X:         x,
-		Y:         y,
-		Velocity:  0,
-		Size:      BirdSize,
-		gravity:   BirdGravity,
-		jumpSpeed: BirdJumpSpeed,
-	}
-}
-
-// Jump makes the bird jump
-func (b *Bird) Jump() {
-	b.Velocity = b.jumpSpeed
-}
-
-// Update updates the bird's position based on velocity and gravity
-func (b *Bird) Update() {
-	b.Velocity += b.gravity
-	b.Y += b.Velocity
-}
-
-// GetRect returns the bird's collision rectangle
-func (b *Bird) GetRect() (x, y, width, height float64) {
-	return b.X - float64(b.Size/2), b.Y - float64(b.Size/2),
-		float64(b.Size), float64(b.Size)
-}
-
-// Draw draws the bird on the screen
-func (b *Bird) Draw(screen *ebiten.Image) {
-	// Draw bird body (yellow rectangle)
-	vector.DrawFilledRect(screen, float32(b.X-float64(b.Size/2)), float32(b.Y-float64(b.Size/2)),
-		float32(b.Size), float32(b.Size), color.RGBA{255, 255, 0, 255}, false)
-
-	// Draw simple eye (black rectangle)
-	eyeSize := float32(3.0)
-	vector.DrawFilledRect(screen, float32(b.X+5)-eyeSize/2, float32(b.Y-5)-eyeSize/2,
-		eyeSize, eyeSize, color.RGBA{0, 0, 0, 255}, false)
-}
 
 // Pipe represents a pipe obstacle
 type Pipe struct {
@@ -139,7 +94,7 @@ func (p *Pipe) Draw(screen *ebiten.Image) {
 
 // GameState represents the main game state (for testing)
 type GameState struct {
-	Bird      *Bird
+	Bird      *bird.Bird
 	Pipes     []*Pipe
 	Score     int
 	GameOver  bool
@@ -152,7 +107,7 @@ func NewGameState() *GameState {
 	rand.Seed(time.Now().UnixNano())
 
 	return &GameState{
-		Bird:      NewBird(BirdStartX, BirdStartY),
+		Bird:      bird.NewBird(BirdStartX, BirdStartY),
 		Pipes:     make([]*Pipe, 0),
 		Score:     0,
 		GameOver:  false,
@@ -162,9 +117,144 @@ func NewGameState() *GameState {
 
 // Restart resets the game to initial state
 func (g *GameState) Restart() {
-	g.Bird = NewBird(BirdStartX, BirdStartY)
+	g.Bird = bird.NewBird(BirdStartX, BirdStartY)
 	g.Pipes = make([]*Pipe, 0)
 	g.Score = 0
 	g.GameOver = false
 	g.LastSpawn = 0
+}
+
+// Game represents the main game instance
+type Game struct {
+	*GameState
+	font font.Face
+}
+
+// NewGame creates a new game instance
+func NewGame() *Game {
+	// Create basic font
+	f := basicfont.Face7x13
+
+	return &Game{
+		GameState: NewGameState(),
+		font:      f,
+	}
+}
+
+// spawnPipe creates a new pipe at the right edge of the screen
+func (g *Game) spawnPipe() {
+	gapY := float64(rand.Intn(ScreenHeight-300) + 150)
+	g.Pipes = append(g.Pipes, NewPipe(float64(ScreenWidth), gapY))
+	g.LastSpawn = float64(ScreenWidth)
+}
+
+// Update updates the game state
+func (g *Game) Update() error {
+	// Handle input
+	if inpututil.IsKeyJustPressed(ebiten.KeySpace) && !g.GameOver {
+		g.Bird.Jump()
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyR) && g.GameOver {
+		g.Restart()
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		return ebiten.Termination
+	}
+
+	if g.GameOver {
+		return nil
+	}
+
+	// Update bird
+	g.Bird.Update()
+
+	// Check if bird hits ground or ceiling
+	if g.Bird.Y > ScreenHeight || g.Bird.Y < 0 {
+		g.GameOver = true
+	}
+
+	// Spawn new pipes
+	if len(g.Pipes) == 0 || g.Pipes[len(g.Pipes)-1].X < float64(ScreenWidth)-PipeSpawnDist {
+		g.spawnPipe()
+	}
+
+	// Update pipes and check collisions
+	for i := len(g.Pipes) - 1; i >= 0; i-- {
+		pipe := g.Pipes[i]
+		pipe.Update()
+
+		// Check collision with bird
+		bx, by, bw, bh := g.Bird.GetRect()
+		topX, topY, topW, topH := pipe.GetTopRect()
+		bottomX, bottomY, bottomW, bottomH := pipe.GetBottomRect()
+
+		if (bx < topX+topW && bx+bw > topX && by < topY+topH && by+bh > topY) ||
+			(bx < bottomX+bottomW && bx+bw > bottomX && by < bottomY+bottomH && by+bh > bottomY) {
+			g.GameOver = true
+		}
+
+		// Remove pipes that are off screen and increment score
+		if pipe.X+float64(pipe.Width) < 0 {
+			g.Pipes = append(g.Pipes[:i], g.Pipes[i+1:]...)
+			if !pipe.Passed {
+				g.Score++
+				pipe.Passed = true
+			}
+		}
+	}
+
+	return nil
+}
+
+// Draw draws the game state
+func (g *Game) Draw(screen *ebiten.Image) {
+	// Clear screen with sky blue background
+	screen.Fill(color.RGBA{135, 206, 235, 255})
+
+	// Draw pipes
+	for _, pipe := range g.Pipes {
+		pipe.Draw(screen)
+	}
+
+	// Draw bird
+	g.Bird.Draw(screen)
+
+	// Draw score
+	scoreText := fmt.Sprintf("Score: %d", g.Score)
+	text.Draw(screen, scoreText, g.font, 10, 30, color.RGBA{0, 0, 0, 255})
+
+	// Draw game over screen
+	if g.GameOver {
+		gameOverText := "GAME OVER! Press R to restart"
+		text.Draw(screen, gameOverText, g.font, ScreenWidth/2-100, ScreenHeight/2,
+			color.RGBA{255, 0, 0, 255})
+	}
+}
+
+// Layout returns the game's screen size
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return ScreenWidth, ScreenHeight
+}
+
+// Run starts the game
+func Run() {
+	fmt.Println("🐦 Starting Glappy Bird Game!")
+	fmt.Println("Controls:")
+	fmt.Println("  SPACE - Jump")
+	fmt.Println("  R - Restart (when game over)")
+	fmt.Println("  ESC - Quit")
+	fmt.Println()
+
+	// Set window properties
+	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
+	ebiten.SetWindowTitle("Glappy Bird")
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeDisabled)
+
+	// Create and run game
+	game := NewGame()
+	if err := ebiten.RunGame(game); err != nil {
+		log.Fatal(err)
+	}
 }
