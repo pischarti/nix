@@ -145,8 +145,12 @@ List all image versions in an ECR repository with optional filtering and sorting
 # Basic usage - list all images in a repository
 ./aws ecr --repository my-repo
 
+# List images from all repositories
+./aws ecr --all
+
 # Filter by specific tag
 ./aws ecr --repository my-repo --tag latest
+./aws ecr --all --tag latest
 
 # Sort by different criteria
 ./aws ecr --repository my-repo --sort tag
@@ -155,6 +159,15 @@ List all image versions in an ECR repository with optional filtering and sorting
 
 # Combine filtering and sorting
 ./aws ecr --repository my-repo --tag v1.0 --sort pushed
+./aws ecr --all --tag v1.0 --sort pushed
+
+# Filter for images older than a specific tag
+./aws ecr --repository my-repo --older-than latest
+./aws ecr --all --older-than v1.0
+
+# Output in YAML format
+./aws ecr --repository my-repo --output yaml
+./aws ecr --all --output yaml
 ```
 
 #### Options
@@ -202,12 +215,15 @@ List all image versions in an ECR repository with optional filtering and sorting
 - `--force` (optional): Skip confirmation prompt
 
 **List ECR Images:**
-- `--repository REPO_NAME` (required): ECR repository name
+- `--repository REPO_NAME` (optional): ECR repository name (use --all for all repositories)
 - `--tag TAG` (optional): Filter by specific image tag
 - `--sort SORT_BY` (optional): Sort by one of:
   - `pushed` (default): Sort by push date (newest first)
   - `tag`: Sort by image tag
   - `size`: Sort by image size (largest first)
+- `--all` (optional): List images from all repositories
+- `--older-than REFERENCE_TAG` (optional): Show only images older than the reference tag
+- `--output FORMAT` (optional): Output format: table (default), yaml
 
 #### Output
 
@@ -254,13 +270,19 @@ List all image versions in an ECR repository with optional filtering and sorting
 - Success/failure messages for each NLB
 - Summary of completed operations
 
-**List ECR Images:** Displays a formatted table with the following columns:
-- Repository (repository name)
-- Tag (image tag, shows "<untagged>" for images without tags)
-- Digest (image digest, truncated for display)
-- Pushed At (push timestamp)
-- Size (human-readable image size)
-- Manifest (image manifest media type)
+**List ECR Images:** 
+- **Table format (default)**: Displays a formatted table with the following columns:
+  - Repository (repository name)
+  - Tag (image tag, shows "<untagged>" for images without tags)
+  - Digest (image digest, truncated for display)
+  - Pushed At (push timestamp)
+  - Size (human-readable image size)
+  - Manifest (image manifest media type)
+- **YAML format**: Outputs structured YAML data with:
+  - `input`: The command parameters used (repository, tag, sort, etc.)
+    - `reference_date`: The push date of the reference tag (when using --older-than)
+  - `images`: Array of image information with all metadata
+  - `count`: Total number of images returned
 
 #### Examples
 
@@ -322,14 +344,26 @@ List all image versions in an ECR repository with optional filtering and sorting
 # List all images in a repository
 ./aws ecr --repository my-app
 
+# List images from all repositories
+./aws ecr --all
+
 # List images with specific tag
 ./aws ecr --repository my-app --tag latest
+./aws ecr --all --tag latest
 
 # List images sorted by tag
 ./aws ecr --repository my-app --sort tag
 
 # List images sorted by size
 ./aws ecr --repository my-app --sort size
+
+# Filter for images older than a specific tag
+./aws ecr --repository my-app --older-than latest
+./aws ecr --all --older-than v1.0
+
+# Output in YAML format
+./aws ecr --repository my-app --output yaml
+./aws ecr --all --output yaml
 
 # Default is sorted by push date (newest first)
 ```

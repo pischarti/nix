@@ -54,7 +54,13 @@ func main() {
 			"  aws ecr list --repository my-repo\n"+
 			"  aws ecr list --repository my-repo --tag latest\n"+
 			"  aws ecr list --repository my-repo --sort tag\n"+
-			"  aws ecr list --repository my-repo --sort size"),
+			"  aws ecr list --repository my-repo --sort size\n"+
+			"  aws ecr --all\n"+
+			"  aws ecr list --all --tag latest\n"+
+			"  aws ecr --repository my-repo --older-than latest\n"+
+			"  aws ecr --all --older-than v1.0\n"+
+			"  aws ecr --repository my-repo --output yaml\n"+
+			"  aws ecr --all --output yaml"),
 	)
 
 	app.Run()
