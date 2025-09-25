@@ -1,0 +1,179 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  GO_VERSION: '1.25.1'
+  BINARY_NAME: 'gaws'
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: amd64
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-latest
+            arch: arm64
+            goos: linux
+            goarch: arm64
+          - os: macos-latest
+            arch: amd64
+            goos: darwin
+            goarch: amd64
+          - os: macos-latest
+            arch: arm64
+            goos: darwin
+            goarch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./go/aws/...
+
+      - name: Build binary
+        run: |
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+            -ldflags="-w -s -X main.version=${{ github.ref_name }}" \
+            -o ${{ env.BINARY_NAME }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} \
+            ./go/aws
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ env.BINARY_NAME }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create checksums
+        run: |
+          cd artifacts
+          for file in */${{ env.BINARY_NAME }}-*; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" > "$file.sha256"
+            fi
+          done
+
+      - name: Create release archive
+        run: |
+          cd artifacts
+          for dir in */; do
+            if [ -d "$dir" ]; then
+              tar -czf "${dir%/}.tar.gz" -C "$dir" .
+            fi
+          done
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << EOF
+          ## ${{ steps.version.outputs.version }}
+          
+          ### Downloads
+          
+          **Linux (amd64)**
+          - \`${{ env.BINARY_NAME }}-linux-amd64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-linux-amd64.tar.gz)
+          - SHA256: \`$(cat artifacts/aws-linux-amd64/aws-linux-amd64.sha256 | cut -d' ' -f1)\`
+          
+          **Linux (arm64)**
+          - \`${{ env.BINARY_NAME }}-linux-arm64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-linux-arm64.tar.gz)
+          - SHA256: \`$(cat artifacts/aws-linux-arm64/aws-linux-arm64.sha256 | cut -d' ' -f1)\`
+          
+          **macOS (amd64)**
+          - \`${{ env.BINARY_NAME }}-darwin-amd64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-darwin-amd64.tar.gz)
+          - SHA256: \`$(cat artifacts/aws-darwin-amd64/aws-darwin-amd64.sha256 | cut -d' ' -f1)\`
+          
+          **macOS (arm64)**
+          - \`${{ env.BINARY_NAME }}-darwin-arm64\` - [Download](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-darwin-arm64.tar.gz)
+          - SHA256: \`$(cat artifacts/aws-darwin-arm64/aws-darwin-arm64.sha256 | cut -d' ' -f1)\`
+          
+          ### Installation
+          
+          \`\`\`bash
+          # Download and extract for your platform
+          wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+          tar -xzf aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+          sudo mv aws /usr/local/bin/
+          \`\`\`
+          
+          ### Usage
+          
+          \`\`\`bash
+          aws --help
+          aws subnets --help
+          aws nlb --help
+          \`\`\`
+          EOF
+          
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          files: |
+            artifacts/*.tar.gz
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

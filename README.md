@@ -1,77 +1,135 @@
-# nix and other system programming learning
+# Nix Development Environment
 
-## Nix Installation
+This repository contains various development projects and tools organized by language and technology.
 
-- https://nix.dev/install-nix.html
+## Projects
 
-## Enter flake shell
+### Go Projects
 
-```sh
-nix develop
+#### AWS CLI (`go/aws/`)
+A command-line tool for managing AWS resources, particularly focused on VPC subnets and Network Load Balancers.
+
+**Features:**
+- List, delete, and check dependencies for AWS subnets
+- Manage Network Load Balancers and their subnet associations
+- Built with the GoFr framework for clean CLI structure
+
+**Usage:**
+```bash
+# List subnets in a VPC
+aws subnets --vpc vpc-12345678
+
+# Delete a subnet
+aws subnets delete --subnet-id subnet-12345678
+
+# List Network Load Balancers
+aws nlb --vpc vpc-12345678
+
+# Add subnets to NLBs
+aws nlb add-subnet --vpc vpc-12345678 --zone us-east-1b
 ```
 
-## Delete .db files recursively
+#### Kubernetes CLI (`go/kube/`)
+Kubernetes management tools and utilities.
 
-Safe CLI to find and delete `.db` files recursively.
+#### Flappy Bird Game (`go/glappy/`)
+A Go implementation of the classic Flappy Bird game using Ebiten.
 
-- Run dry-run (default):
-```sh
-python ./py/sql/drop_db.py ./py
+### Python Projects
+
+#### AWS Tools (`py/aws/`)
+Python-based AWS automation scripts for VPC management.
+
+#### FastAPI Demo (`py/fastapi/`)
+Simple FastAPI application with testing.
+
+#### Flappy Bird (`py/flappy/`)
+Python implementation of Flappy Bird using Pygame.
+
+#### Data Analysis (`py/panda/`, `py/sql/`, `py/sqlalchemy/`)
+Various data analysis and SQL projects using pandas, SQLAlchemy, and other libraries.
+
+### Terraform Infrastructure
+
+#### Network Firewall (`tf/nfw/`)
+Terraform configurations for AWS Network Firewall deployments.
+
+#### Gateway Load Balancer (`tf/gwlb/`)
+Gateway Load Balancer configurations for traffic inspection.
+
+#### Transit Gateway (`tf/tgw/`)
+Transit Gateway configurations for network connectivity.
+
+## Development
+
+### Prerequisites
+
+- **Go**: Version 1.25.1 or later
+- **Python**: 3.8+ with uv for dependency management
+- **Terraform**: Latest version
+- **Nix**: For reproducible development environments
+
+### Getting Started
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd nix
 ```
 
-- Actually delete (confirm):
-```sh
-python ./sql/drop_db.py ./py --yes
+2. Set up development environment:
+```bash
+# For Go projects
+cd go/aws
+go mod download
+
+# For Python projects
+cd py/aws
+uv sync
+
+# For Terraform projects
+cd tf/nfw
+terraform init
 ```
 
-- Options:
-  - `--ext .db .sqlite`: match additional extensions
-  - `--quiet`: only show summary
+### Building and Releasing
 
-- Behavior:
-  - Recurses from the folder
-  - Lists matched files
-  - Deletes only with `--yes`
-  - Prints a summary and any failures
+#### Go AWS CLI
 
-## Unit tests for drop_db.py
+The Go AWS CLI has automated build and release workflows:
 
-- Coverage:
-  - Find `.db` files (single/multiple extensions, case-insensitive)
-  - Deletion behavior
-  - CLI dry-run vs `--yes`
-  - `--ext` filtering
-
-- Run tests:
-```sh
-python3 -m unittest -v py/sql/tests/test_drop_db.py
+**Manual Release:**
+```bash
+# Create a new release (patch, minor, or major)
+./scripts/release.sh patch
 ```
 
-## Run with uv
+**GitHub Actions:**
+- **Version Management**: Use the "Version Management" workflow to create version tags
+- **Build and Release**: Automatically triggered on version tags to build for:
+  - Linux (amd64, arm64)
+  - macOS (amd64, arm64)
 
-Dependencies are listed in example `requirements.txt`.
+**Download Releases:**
+Visit the [Releases page](https://github.com/your-org/nix/releases) to download pre-built binaries.
 
-1. Install uv (macOS if don't have nix):
-```sh
-brew install uv
+#### Installation
+
+```bash
+# Download for your platform
+wget https://github.com/your-org/nix/releases/download/v1.0.0/aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+tar -xzf aws-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
+sudo mv aws /usr/local/bin/
 ```
 
-2. Create a virtual environment:
-```sh
-uv venv
-```
+## Contributing
 
-3. Activate it (zsh/bash):
-```sh
-source .venv/bin/activate
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-4. Install dependencies:
-```sh
-uv pip install -r requirements.txt
-```
+## License
 
-5. Run the script:
-```sh
-uv run py/panda/join_agg_vis.py
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
