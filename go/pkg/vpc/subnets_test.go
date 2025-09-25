@@ -121,57 +121,57 @@ func TestSortSubnets(t *testing.T) {
 		{
 			name: "sort by cidr",
 			subnets: []SubnetInfo{
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2"},
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1"},
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3"},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2", Tags: ""},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1", Tags: ""},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3", Tags: ""},
 			},
 			sortBy: "cidr",
 			expected: []SubnetInfo{
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1"},
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2"},
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3"},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1", Tags: ""},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2", Tags: ""},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3", Tags: ""},
 			},
 		},
 		{
 			name: "sort by az",
 			subnets: []SubnetInfo{
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1c", Name: "subnet1"},
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1a", Name: "subnet2"},
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1b", Name: "subnet3"},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1c", Name: "subnet1", Tags: ""},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1a", Name: "subnet2", Tags: ""},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1b", Name: "subnet3", Tags: ""},
 			},
 			sortBy: "az",
 			expected: []SubnetInfo{
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1a", Name: "subnet2"},
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1b", Name: "subnet3"},
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1c", Name: "subnet1"},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1a", Name: "subnet2", Tags: ""},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1b", Name: "subnet3", Tags: ""},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1c", Name: "subnet1", Tags: ""},
 			},
 		},
 		{
 			name: "sort by name",
 			subnets: []SubnetInfo{
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "zebra"},
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "alpha"},
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "beta"},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "zebra", Tags: ""},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "alpha", Tags: ""},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "beta", Tags: ""},
 			},
 			sortBy: "name",
 			expected: []SubnetInfo{
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "alpha"},
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "beta"},
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "zebra"},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "alpha", Tags: ""},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "beta", Tags: ""},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "zebra", Tags: ""},
 			},
 		},
 		{
 			name: "sort by type",
 			subnets: []SubnetInfo{
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1", Type: "private"},
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2", Type: "public"},
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3", Type: "database"},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1", Type: "private", Tags: ""},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2", Type: "public", Tags: ""},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3", Type: "database", Tags: ""},
 			},
 			sortBy: "type",
 			expected: []SubnetInfo{
-				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3", Type: "database"},
-				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1", Type: "private"},
-				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2", Type: "public"},
+				{CIDRBlock: "10.0.3.0/24", AZ: "us-east-1c", Name: "subnet3", Type: "database", Tags: ""},
+				{CIDRBlock: "10.0.1.0/24", AZ: "us-east-1a", Name: "subnet1", Type: "private", Tags: ""},
+				{CIDRBlock: "10.0.2.0/24", AZ: "us-east-1b", Name: "subnet2", Type: "public", Tags: ""},
 			},
 		},
 	}
@@ -201,6 +201,9 @@ func TestSortSubnets(t *testing.T) {
 				}
 				if subnet.Type != tt.expected[i].Type {
 					t.Errorf("Type[%d] = %v, want %v", i, subnet.Type, tt.expected[i].Type)
+				}
+				if subnet.Tags != tt.expected[i].Tags {
+					t.Errorf("Tags[%d] = %v, want %v", i, subnet.Tags, tt.expected[i].Tags)
 				}
 			}
 		})
@@ -275,7 +278,7 @@ func TestConvertEC2SubnetsToSubnetInfo(t *testing.T) {
 		expected   []SubnetInfo
 	}{
 		{
-			name: "basic conversion",
+			name: "basic conversion with tags",
 			ec2Subnets: []types.Subnet{
 				{
 					SubnetId:         aws.String("subnet-12345678"),
@@ -286,18 +289,20 @@ func TestConvertEC2SubnetsToSubnetInfo(t *testing.T) {
 					Tags: []types.Tag{
 						{Key: aws.String("Name"), Value: aws.String("test-subnet")},
 						{Key: aws.String("Type"), Value: aws.String("private")},
+						{Key: aws.String("kubernetes.io/role/elb"), Value: aws.String("1")},
+						{Key: aws.String("Environment"), Value: aws.String("prod")},
 					},
 				},
 			},
 			expected: []SubnetInfo{
 				{
 					SubnetID:  "subnet-12345678",
-					VPCID:     "vpc-12345678",
 					CIDRBlock: "10.0.1.0/24",
 					AZ:        "us-east-1a",
 					Name:      "test-subnet",
 					State:     "available",
 					Type:      "private",
+					Tags:      "kubernetes.io/role/elb\nEnvironment",
 				},
 			},
 		},
@@ -316,12 +321,12 @@ func TestConvertEC2SubnetsToSubnetInfo(t *testing.T) {
 			expected: []SubnetInfo{
 				{
 					SubnetID:  "subnet-87654321",
-					VPCID:     "vpc-87654321",
 					CIDRBlock: "10.0.2.0/24",
 					AZ:        "us-east-1b",
 					Name:      "",
 					State:     "pending",
 					Type:      "subnet",
+					Tags:      "",
 				},
 			},
 		},
@@ -337,18 +342,19 @@ func TestConvertEC2SubnetsToSubnetInfo(t *testing.T) {
 					Tags: []types.Tag{
 						{Key: aws.String("Name"), Value: aws.String("named-subnet")},
 						{Key: aws.String("Environment"), Value: aws.String("prod")},
+						{Key: aws.String("kubernetes.io/cluster/mycluster"), Value: aws.String("shared")},
 					},
 				},
 			},
 			expected: []SubnetInfo{
 				{
 					SubnetID:  "subnet-11111111",
-					VPCID:     "vpc-11111111",
 					CIDRBlock: "10.0.3.0/24",
 					AZ:        "us-east-1c",
 					Name:      "named-subnet",
 					State:     "available",
 					Type:      "subnet",
+					Tags:      "Environment\nkubernetes.io/cluster/mycluster",
 				},
 			},
 		},
@@ -373,9 +379,6 @@ func TestConvertEC2SubnetsToSubnetInfo(t *testing.T) {
 				if subnet.SubnetID != expected.SubnetID {
 					t.Errorf("SubnetID[%d] = %v, want %v", i, subnet.SubnetID, expected.SubnetID)
 				}
-				if subnet.VPCID != expected.VPCID {
-					t.Errorf("VPCID[%d] = %v, want %v", i, subnet.VPCID, expected.VPCID)
-				}
 				if subnet.CIDRBlock != expected.CIDRBlock {
 					t.Errorf("CIDRBlock[%d] = %v, want %v", i, subnet.CIDRBlock, expected.CIDRBlock)
 				}
@@ -390,6 +393,9 @@ func TestConvertEC2SubnetsToSubnetInfo(t *testing.T) {
 				}
 				if subnet.Type != expected.Type {
 					t.Errorf("Type[%d] = %v, want %v", i, subnet.Type, expected.Type)
+				}
+				if subnet.Tags != expected.Tags {
+					t.Errorf("Tags[%d] = %v, want %v", i, subnet.Tags, expected.Tags)
 				}
 			}
 		})

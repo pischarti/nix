@@ -14,68 +14,68 @@ func TestPrintSubnetsTableString(t *testing.T) {
 		expected []string // Expected strings to be present in output
 	}{
 		{
-			name: "single subnet",
+			name: "single subnet with tags",
 			subnets: []vpc.SubnetInfo{
 				{
 					SubnetID:  "subnet-12345678",
-					VPCID:     "vpc-12345678",
 					CIDRBlock: "10.0.1.0/24",
 					AZ:        "us-east-1a",
 					Name:      "test-subnet",
 					State:     "available",
 					Type:      "private",
+					Tags:      "kubernetes.io/role/elb\nEnvironment",
 				},
 			},
 			expected: []string{
 				"SUBNET ID",
-				"VPC ID",
 				"CIDR BLOCK",
 				"AZ",
 				"NAME",
 				"STATE",
 				"TYPE",
+				"TAGS",
 				"subnet-12345678",
-				"vpc-12345678",
 				"10.0.1.0/24",
 				"us-east-1a",
 				"test-subnet",
 				"available",
 				"private",
+				"kubernetes.io/role/elb",
+				"Environment",
 			},
 		},
 		{
-			name: "multiple subnets",
+			name: "multiple subnets with different tags",
 			subnets: []vpc.SubnetInfo{
 				{
 					SubnetID:  "subnet-11111111",
-					VPCID:     "vpc-12345678",
 					CIDRBlock: "10.0.1.0/24",
 					AZ:        "us-east-1a",
 					Name:      "subnet-1",
 					State:     "available",
 					Type:      "private",
+					Tags:      "kubernetes.io/role/elb",
 				},
 				{
 					SubnetID:  "subnet-22222222",
-					VPCID:     "vpc-12345678",
 					CIDRBlock: "10.0.2.0/24",
 					AZ:        "us-east-1b",
 					Name:      "subnet-2",
 					State:     "available",
 					Type:      "public",
+					Tags:      "kubernetes.io/cluster/mycluster\nEnvironment",
 				},
 			},
 			expected: []string{
 				"SUBNET ID",
-				"VPC ID",
 				"CIDR BLOCK",
 				"AZ",
 				"NAME",
 				"STATE",
 				"TYPE",
+				"TAGS",
 				"subnet-11111111",
 				"subnet-22222222",
-				"vpc-12345678",
 				"10.0.1.0/24",
 				"10.0.2.0/24",
 				"us-east-1a",
@@ -85,6 +85,9 @@ func TestPrintSubnetsTableString(t *testing.T) {
 				"available",
 				"private",
 				"public",
+				"kubernetes.io/role/elb",
+				"kubernetes.io/cluster/mycluster",
+				"Environment",
 			},
 		},
 		{
@@ -92,37 +95,36 @@ func TestPrintSubnetsTableString(t *testing.T) {
 			subnets: []vpc.SubnetInfo{},
 			expected: []string{
 				"SUBNET ID",
-				"VPC ID",
 				"CIDR BLOCK",
 				"AZ",
 				"NAME",
 				"STATE",
 				"TYPE",
+				"TAGS",
 			},
 		},
 		{
-			name: "subnet with empty name and type",
+			name: "subnet with empty name and no tags",
 			subnets: []vpc.SubnetInfo{
 				{
 					SubnetID:  "subnet-33333333",
-					VPCID:     "vpc-12345678",
 					CIDRBlock: "10.0.3.0/24",
 					AZ:        "us-east-1c",
 					Name:      "",
 					State:     "pending",
 					Type:      "subnet",
+					Tags:      "",
 				},
 			},
 			expected: []string{
 				"SUBNET ID",
-				"VPC ID",
 				"CIDR BLOCK",
 				"AZ",
 				"NAME",
 				"STATE",
 				"TYPE",
+				"TAGS",
 				"subnet-33333333",
-				"vpc-12345678",
 				"10.0.3.0/24",
 				"us-east-1c",
 				"pending",
@@ -162,12 +164,12 @@ func TestPrintSubnetsTableStringOutput(t *testing.T) {
 	subnets := []vpc.SubnetInfo{
 		{
 			SubnetID:  "subnet-test",
-			VPCID:     "vpc-test",
 			CIDRBlock: "10.0.0.0/24",
 			AZ:        "us-east-1a",
 			Name:      "test",
 			State:     "available",
 			Type:      "private",
+			Tags:      "kubernetes.io/role/elb",
 		},
 	}
 
@@ -183,23 +185,33 @@ func TestPrintSubnetsTableStringOutput(t *testing.T) {
 		t.Error("Expected result to contain 'SUBNET ID' header")
 	}
 
+	// Should contain TAGS header
+	if !strings.Contains(result, "TAGS") {
+		t.Error("Expected result to contain 'TAGS' header")
+	}
+
 	// Should contain data
 	if !strings.Contains(result, "subnet-test") {
 		t.Error("Expected result to contain subnet data")
 	}
+
+	// Should contain tags
+	if !strings.Contains(result, "kubernetes.io/role/elb") {
+		t.Error("Expected result to contain tag data")
+	}
 }
 
 func TestPrintSubnetsTableStringWithSpecialCharacters(t *testing.T) {
-	// Test with special characters in names and types
+	// Test with special characters in names, types, and tags
 	subnets := []vpc.SubnetInfo{
 		{
 			SubnetID:  "subnet-12345678",
-			VPCID:     "vpc-12345678",
 			CIDRBlock: "10.0.1.0/24",
 			AZ:        "us-east-1a",
 			Name:      "subnet-with-special-chars-!@#$%",
 			State:     "available",
 			Type:      "private-subnet",
+			Tags:      "kubernetes.io/role/elb, aws:autoscaling:groupName",
 		},
 	}
 
@@ -217,5 +229,10 @@ func TestPrintSubnetsTableStringWithSpecialCharacters(t *testing.T) {
 
 	if !strings.Contains(result, "private-subnet") {
 		t.Error("Expected result to contain hyphen in type")
+	}
+
+	// Should contain AWS tags
+	if !strings.Contains(result, "aws:autoscaling:groupName") {
+		t.Error("Expected result to contain AWS tag")
 	}
 }

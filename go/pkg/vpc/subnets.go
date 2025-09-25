@@ -120,31 +120,42 @@ func ConvertEC2SubnetsToSubnetInfo(ec2Subnets []types.Subnet) []SubnetInfo {
 	for _, subnet := range ec2Subnets {
 		name := ""
 		subnetType := "subnet"
+		var relevantTags []string
 
-		// Extract name from tags
+		// Extract name and type from tags, and collect other relevant tags
 		for _, tag := range subnet.Tags {
-			if aws.ToString(tag.Key) == "Name" {
-				name = aws.ToString(tag.Value)
-				break
+			key := aws.ToString(tag.Key)
+			value := aws.ToString(tag.Value)
+
+			switch key {
+			case "Name":
+				name = value
+			case "Type":
+				subnetType = value
+			default:
+				// Include tags that are commonly used for networking/infrastructure
+				if strings.HasPrefix(key, "kubernetes.io/") ||
+					strings.HasPrefix(key, "aws:") ||
+					strings.HasPrefix(key, "Name") ||
+					key == "Environment" ||
+					key == "Project" ||
+					key == "Tier" {
+					relevantTags = append(relevantTags, key)
+				}
 			}
 		}
 
-		// Determine subnet type based on tags
-		for _, tag := range subnet.Tags {
-			if aws.ToString(tag.Key) == "Type" {
-				subnetType = aws.ToString(tag.Value)
-				break
-			}
-		}
+		// Format tags with each tag on a separate line
+		tagsStr := strings.Join(relevantTags, "\n")
 
 		subnetInfo := SubnetInfo{
 			SubnetID:  aws.ToString(subnet.SubnetId),
-			VPCID:     aws.ToString(subnet.VpcId),
 			CIDRBlock: aws.ToString(subnet.CidrBlock),
 			AZ:        aws.ToString(subnet.AvailabilityZone),
 			Name:      name,
 			State:     string(subnet.State),
 			Type:      subnetType,
+			Tags:      tagsStr,
 		}
 		subnets = append(subnets, subnetInfo)
 	}

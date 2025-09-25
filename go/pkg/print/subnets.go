@@ -15,18 +15,18 @@ func PrintSubnetsTable(subnets []vpc.SubnetInfo) {
 	t.SetStyle(table.StyleColoredBright)
 
 	// Add headers
-	t.AppendHeader(table.Row{"Subnet ID", "VPC ID", "CIDR Block", "AZ", "Name", "State", "Type"})
+	t.AppendHeader(table.Row{"Subnet ID", "CIDR Block", "AZ", "Name", "State", "Type", "Tags"})
 
 	// Add rows
 	for _, subnet := range subnets {
 		t.AppendRow(table.Row{
 			subnet.SubnetID,
-			subnet.VPCID,
 			subnet.CIDRBlock,
 			subnet.AZ,
 			subnet.Name,
 			subnet.State,
 			subnet.Type,
+			subnet.Tags,
 		})
 	}
 
@@ -38,21 +38,21 @@ func PrintSubnetsTable(subnets []vpc.SubnetInfo) {
 func PrintSubnetsTableString(subnets []vpc.SubnetInfo) string {
 	// Create table
 	t := table.NewWriter()
-	t.SetStyle(table.StyleColoredBright)
+	t.SetStyle(table.StyleColoredDark)
 
 	// Add headers
-	t.AppendHeader(table.Row{"Subnet ID", "VPC ID", "CIDR Block", "AZ", "Name", "State", "Type"})
+	t.AppendHeader(table.Row{"Subnet ID", "CIDR Block", "AZ", "Name", "State", "Type", "Tags"})
 
 	// Add rows
 	for _, subnet := range subnets {
 		t.AppendRow(table.Row{
 			subnet.SubnetID,
-			subnet.VPCID,
 			subnet.CIDRBlock,
 			subnet.AZ,
 			subnet.Name,
 			subnet.State,
 			subnet.Type,
+			subnet.Tags,
 		})
 	}
 
