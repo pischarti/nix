@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"log"
 	"math/rand"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -27,9 +26,9 @@ const (
 	BirdStartY = ScreenHeight / 2
 
 	// Pipe properties
-	PipeWidth     = 50
-	PipeGapSize   = 150
-	PipeSpeed     = 3
+	PipeWidth     = 80
+	PipeGapSize   = 100
+	PipeSpeed     = 5
 	PipeSpawnDist = 300
 )
 
@@ -103,9 +102,6 @@ type GameState struct {
 
 // NewGameState creates a new game state instance
 func NewGameState() *GameState {
-	// Initialize random seed
-	rand.Seed(time.Now().UnixNano())
-
 	return &GameState{
 		Bird:      bird.NewBird(BirdStartX, BirdStartY),
 		Pipes:     make([]*Pipe, 0),
