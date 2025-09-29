@@ -1,0 +1,130 @@
+Diagram:
+  DefinitionFiles:
+    - Type: URL
+      Url: "https://raw.githubusercontent.com/awslabs/diagram-as-code/main/definitions/definition-for-aws-icons-light.yaml"
+    #- Type: LocalFile
+    #  LocalFile: ./definitions/definition-for-aws-icons-light.yaml
+
+  Resources:
+    Canvas:
+      Type: AWS::Diagram::Canvas
+      Direction: vertical
+      Children:
+        - AWSCloud
+        - User
+    AWSCloud:
+      Type: AWS::Diagram::Cloud
+      Direction: vertical
+      Preset: AWSCloudNoLogo
+      Align: center
+      Children:
+        - VPC
+    # VPC
+    VPC:
+      Type: AWS::EC2::VPC
+      Direction: vertical
+      Children:
+        - VPCPublicStack
+        - NLB
+        - VPCPrivateAppStack
+        - VPCPrivateDBStack
+      BorderChildren:
+        - Position: S
+          Resource: IGW
+    VPCPublicStack:
+      Type: AWS::Diagram::HorizontalStack
+      Children:
+        - VPCPublicSubnet1A
+        - VPCPublicSubnet2B
+    VPCPublicSubnet1A:
+      Type: AWS::EC2::Subnet
+      Preset: PublicSubnet
+    VPCPublicSubnet2B:
+      Type: AWS::EC2::Subnet
+      Preset: PublicSubnet
+    VPCPrivateAppStack:
+      Type: AWS::Diagram::HorizontalStack
+      Children:
+        - VPCPrivateAppSubnet1A
+        - VPCPrivateAppSubnet2B
+    VPCPrivateAppSubnet1A:
+      Type: AWS::EC2::Subnet
+      Preset: PrivateSubnet
+      Children:
+        - VPCPrivateAppSubnet1AEKS
+    VPCPrivateAppSubnet1AEKS:
+      Type: AWS::EKS
+    VPCPrivateAppSubnet2B:
+      Type: AWS::EC2::Subnet
+      Preset: PrivateSubnet
+      Children:
+        - VPCPrivateAppSubnet2BEKS
+    VPCPrivateAppSubnet2BEKS:
+      Type: AWS::EKS
+    VPCPrivateDBStack:
+      Type: AWS::Diagram::HorizontalStack
+      Children:
+        - VPCPrivateDBSubnet1A
+        - VPCPrivateDBSubnet2B
+    VPCPrivateDBSubnet1A:
+      Type: AWS::EC2::Subnet
+      Preset: PrivateSubnet
+      Children:
+        - VPCPrivateDBSubnet1AInstance
+    VPCPrivateDBSubnet1AInstance:
+      Type: AWS::RDS::DBInstance
+    VPCPrivateDBSubnet2B:
+      Type: AWS::EC2::Subnet
+      Preset: PrivateSubnet
+      Children:
+        - VPCPrivateDBSubnet2BInstance
+    VPCPrivateDBSubnet2BInstance:
+      Type: AWS::RDS::DBInstance
+    NLB:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      Preset: Network Load Balancer
+    IGW:
+      Type: AWS::EC2::InternetGateway
+      IconFill:
+        Type: rect
+    User:
+      Type: AWS::Diagram::Resource
+      Preset: User
+
+  Links:
+    - Source: NLB
+      SourcePosition: SW
+      Target: VPCPrivateAppSubnet1AEKS
+      TargetPosition: NE
+      TargetArrowHead:
+        Type: Open
+    - Source: NLB
+      SourcePosition: SE
+      Target: VPCPrivateAppSubnet2BEKS
+      TargetPosition: NW
+      TargetArrowHead:
+        Type: Open
+    - Source: VPCPrivateAppSubnet1AEKS
+      SourcePosition: S
+      Target: VPCPrivateDBSubnet1AInstance
+      TargetPosition: N
+      TargetArrowHead:
+        Type: Open
+    - Source: VPCPrivateAppSubnet2BEKS
+      SourcePosition: S
+      Target: VPCPrivateDBSubnet2BInstance
+      TargetPosition: N
+      TargetArrowHead:
+        Type: Open
+    - Source: IGW
+      SourcePosition: N
+      Target: NLB
+      TargetPosition: S
+      TargetArrowHead:
+        Type: Open
+    - Source: User
+      SourcePosition: N
+      Target: IGW
+      TargetPosition: S
+      TargetArrowHead:
+        Type: Open
