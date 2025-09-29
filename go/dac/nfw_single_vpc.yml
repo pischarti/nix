@@ -24,10 +24,10 @@ Diagram:
       Type: AWS::EC2::VPC
       Direction: vertical
       Children:
-        - VPCPublicStack
-        - NLB
-        - VPCPrivateAppStack
         - VPCPrivateDBStack
+        - VPCPrivateAppStack
+        - VPCPrivateNFWStack
+        - VPCPublicStack
       BorderChildren:
         - Position: S
           Resource: IGW
@@ -39,9 +39,19 @@ Diagram:
     VPCPublicSubnet1A:
       Type: AWS::EC2::Subnet
       Preset: PublicSubnet
+      Children:
+        - NLB1A
+    NLB1A:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      Preset: Network Load Balancer
     VPCPublicSubnet2B:
       Type: AWS::EC2::Subnet
       Preset: PublicSubnet
+      Children:
+        - NLB2B
+    NLB2B:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      Preset: Network Load Balancer
     VPCPrivateAppStack:
       Type: AWS::Diagram::HorizontalStack
       Children:
@@ -61,6 +71,25 @@ Diagram:
         - VPCPrivateAppSubnet2BEKS
     VPCPrivateAppSubnet2BEKS:
       Type: AWS::EKS
+    VPCPrivateNFWStack:
+      Type: AWS::Diagram::HorizontalStack
+      Children:
+        - VPCPrivateNFWSubnet1A
+        - VPCPrivateNFWSubnet2B
+    VPCPrivateNFWSubnet1A:
+      Type: AWS::EC2::Subnet
+      Preset: PrivateSubnet
+      Children:
+        - VPCPrivateNFWSubnet1AInstance
+    VPCPrivateNFWSubnet1AInstance:
+      Type: AWS::NetworkFirewall::Firewall
+    VPCPrivateNFWSubnet2B:
+      Type: AWS::EC2::Subnet
+      Preset: PrivateSubnet
+      Children:
+        - VPCPrivateNFWSubnet2BInstance
+    VPCPrivateNFWSubnet2BInstance:
+      Type: AWS::NetworkFirewall::Firewall
     VPCPrivateDBStack:
       Type: AWS::Diagram::HorizontalStack
       Children:
@@ -80,9 +109,6 @@ Diagram:
         - VPCPrivateDBSubnet2BInstance
     VPCPrivateDBSubnet2BInstance:
       Type: AWS::RDS::DBInstance
-    NLB:
-      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-      Preset: Network Load Balancer
     IGW:
       Type: AWS::EC2::InternetGateway
       IconFill:
@@ -92,33 +118,51 @@ Diagram:
       Preset: User
 
   Links:
-    - Source: NLB
-      SourcePosition: SW
-      Target: VPCPrivateAppSubnet1AEKS
-      TargetPosition: NE
+    - Source: NLB1A
+      SourcePosition: N
+      Target: VPCPrivateNFWSubnet1AInstance
+      TargetPosition: S
       TargetArrowHead:
         Type: Open
-    - Source: NLB
-      SourcePosition: SE
+    - Source: NLB2B
+      SourcePosition: N
+      Target: VPCPrivateNFWSubnet2BInstance
+      TargetPosition: S
+      TargetArrowHead:
+        Type: Open
+    - Source: VPCPrivateNFWSubnet1AInstance
+      SourcePosition: N
+      Target: VPCPrivateAppSubnet1AEKS
+      TargetPosition: S
+      TargetArrowHead:
+        Type: Open
+    - Source: VPCPrivateNFWSubnet2BInstance
+      SourcePosition: N
       Target: VPCPrivateAppSubnet2BEKS
-      TargetPosition: NW
+      TargetPosition: S
       TargetArrowHead:
         Type: Open
     - Source: VPCPrivateAppSubnet1AEKS
-      SourcePosition: S
+      SourcePosition: N
       Target: VPCPrivateDBSubnet1AInstance
-      TargetPosition: N
+      TargetPosition: S
       TargetArrowHead:
         Type: Open
     - Source: VPCPrivateAppSubnet2BEKS
-      SourcePosition: S
+      SourcePosition: N
       Target: VPCPrivateDBSubnet2BInstance
-      TargetPosition: N
+      TargetPosition: S
       TargetArrowHead:
         Type: Open
     - Source: IGW
       SourcePosition: N
-      Target: NLB
+      Target: NLB1A
+      TargetPosition: S
+      TargetArrowHead:
+        Type: Open
+    - Source: IGW
+      SourcePosition: N
+      Target: NLB2B
       TargetPosition: S
       TargetArrowHead:
         Type: Open
