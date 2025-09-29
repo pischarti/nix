@@ -22,19 +22,30 @@ Diagram:
     # VPC
     VPC:
       Type: AWS::EC2::VPC
-      Direction: vertical
+      Direction: horizontal
       Children:
-        - VPCPrivateDBStack
-        - VPCPrivateAppStack
-        - VPCPrivateNFWStack
-        - VPCPublicStack
+        - VPCAvailabilityZone1A
+        - VPCAvailabilityZone2B
       BorderChildren:
         - Position: S
           Resource: IGW
-    VPCPublicStack:
-      Type: AWS::Diagram::HorizontalStack
+    VPCAvailabilityZone1A:
+      Type: AWS::EC2::AvailabilityZone
+      Direction: vertical
+      Title: us-west-1a
       Children:
+        - VPCPrivateDBSubnet1A
+        - VPCPrivateAppSubnet1A
+        - VPCPrivateNFWSubnet1A
         - VPCPublicSubnet1A
+    VPCAvailabilityZone2B:
+      Type: AWS::EC2::AvailabilityZone
+      Direction: vertical
+      Title: us-west-2b
+      Children:
+        - VPCPrivateDBSubnet2B
+        - VPCPrivateAppSubnet2B
+        - VPCPrivateNFWSubnet2B
         - VPCPublicSubnet2B
     VPCPublicSubnet1A:
       Type: AWS::EC2::Subnet
@@ -52,11 +63,6 @@ Diagram:
     NLB2B:
       Type: AWS::ElasticLoadBalancingV2::LoadBalancer
       Preset: Network Load Balancer
-    VPCPrivateAppStack:
-      Type: AWS::Diagram::HorizontalStack
-      Children:
-        - VPCPrivateAppSubnet1A
-        - VPCPrivateAppSubnet2B
     VPCPrivateAppSubnet1A:
       Type: AWS::EC2::Subnet
       Preset: PrivateSubnet
@@ -71,11 +77,6 @@ Diagram:
         - VPCPrivateAppSubnet2BEKS
     VPCPrivateAppSubnet2BEKS:
       Type: AWS::EKS
-    VPCPrivateNFWStack:
-      Type: AWS::Diagram::HorizontalStack
-      Children:
-        - VPCPrivateNFWSubnet1A
-        - VPCPrivateNFWSubnet2B
     VPCPrivateNFWSubnet1A:
       Type: AWS::EC2::Subnet
       Preset: PrivateSubnet
@@ -90,11 +91,6 @@ Diagram:
         - VPCPrivateNFWSubnet2BInstance
     VPCPrivateNFWSubnet2BInstance:
       Type: AWS::NetworkFirewall::Firewall
-    VPCPrivateDBStack:
-      Type: AWS::Diagram::HorizontalStack
-      Children:
-        - VPCPrivateDBSubnet1A
-        - VPCPrivateDBSubnet2B
     VPCPrivateDBSubnet1A:
       Type: AWS::EC2::Subnet
       Preset: PrivateSubnet
