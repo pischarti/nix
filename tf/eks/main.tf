@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0"
+      version = ">= 5.95.0"
     }
     tls = {
       source  = "hashicorp/tls"
@@ -17,13 +17,13 @@ terraform {
     kubectl = {
       source  = "alekc/kubectl"
       version = ">= 2.1"
-    }    
+    }
   }
   backend "s3" {
-    bucket  = "terraform-state-aws-poc-us-east-1"
-    key     = "eks/automode-demo/terraform.tfstate"
-    region  = "us-east-1"
-  }  
+    bucket = "terraform-state-aws-poc-us-east-1"
+    key    = "eks/automode-demo/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
 
 locals {
@@ -33,13 +33,11 @@ locals {
   cluster_version = "1.33"
 
   vpc_cidr = "10.0.0.0/16"
-  azs      = slice(data.aws_availability_zones.available.names, 0, 2)
+  azs      = slice(data.aws_availability_zones.available.names, 0, 3)
 
-  tags = {
-    Blueprint  = local.name
-    GithubRepo = "github.com/aws-ia/terraform-aws-eks-blueprints"
-  }
-
+  tags = merge(var.tags, {
+    Blueprint = local.name
+  })
 }
 
 provider "aws" {
@@ -80,7 +78,7 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
-  subnet_ids = module.vpc.private_subnets
+  subnet_ids = local.eks_subnets
 
   enable_cluster_creator_admin_permissions = true
 
@@ -107,7 +105,7 @@ module "eks" {
     }
   }
 
-  tags = local.tags
+  tags = merge(var.tags, local.tags)
 }
 
 ###############################################################
@@ -132,7 +130,7 @@ resource "aws_iam_role" "custom_nodeclass_role" {
     ]
   })
 
-  tags = local.tags
+  tags = merge(var.tags, local.tags)
 }
 
 # Attach AmazonEKSWorkerNodeMinimalPolicy
@@ -150,6 +148,38 @@ resource "aws_iam_role_policy_attachment" "ecr_pull_policy" {
 ###############################################################
 # Supporting Resources
 ###############################################################
+locals {
+  # EKS subnets: 80% allocation using /18 (16,384 addresses per subnet)
+  # Total for 3 AZs: 49,152 addresses (75% of VPC)
+  eks_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 2, k)]
+  
+  # RDS subnets: 10% allocation using /22 (1,024 addresses per subnet) 
+  # Total for 3 AZs: 3,072 addresses (4.7% of VPC)
+  # Use explicit ranges to avoid overlaps: 10.0.192.0/22, 10.0.196.0/22, 10.0.200.0/22
+  rds_subnets = [
+    "10.0.192.0/22",   # us-east-1a: 10.0.192.0 - 10.0.195.255 (1,024 addresses)
+    "10.0.196.0/22",   # us-east-1b: 10.0.196.0 - 10.0.199.255 (1,024 addresses)
+    "10.0.200.0/22"    # us-east-1c: 10.0.200.0 - 10.0.203.255 (1,024 addresses)
+  ]
+  
+  # Firewall subnets: Minimal allocation using /28 (16 addresses per subnet)
+  # Total for 3 AZs: 48 addresses (0.07% of VPC)
+  # Use explicit ranges to avoid overlaps: 10.0.216.0/28, 10.0.216.16/28, 10.0.216.32/28
+  firewall_subnets = [
+    "10.0.216.0/28",   # us-east-1a: 10.0.216.0 - 10.0.216.15 (16 addresses)
+    "10.0.216.16/28",  # us-east-1b: 10.0.216.16 - 10.0.216.31 (16 addresses)
+    "10.0.216.32/28"   # us-east-1c: 10.0.216.32 - 10.0.216.47 (16 addresses)
+  ]
+  
+  # Public subnets: 10% allocation using /22 (1,024 addresses per subnet)
+  # Total for 3 AZs: 3,072 addresses (4.7% of VPC)  
+  # Use explicit ranges to avoid overlaps: 10.0.204.0/22, 10.0.208.0/22, 10.0.212.0/22
+  public_subnets = [
+    "10.0.204.0/22",   # us-east-1a: 10.0.204.0 - 10.0.207.255 (1,024 addresses)
+    "10.0.208.0/22",   # us-east-1b: 10.0.208.0 - 10.0.211.255 (1,024 addresses)
+    "10.0.212.0/22"    # us-east-1c: 10.0.212.0 - 10.0.215.255 (1,024 addresses)
+  ]
+}
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -159,17 +189,52 @@ module "vpc" {
   cidr = local.vpc_cidr
 
   azs             = local.azs
-  private_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 4, k)]
-  public_subnets  = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 48)]
+  private_subnets = local.eks_subnets
+  public_subnets  = local.public_subnets
 
   enable_nat_gateway = true
   single_nat_gateway = true
 
   public_subnet_tags = { "kubernetes.io/role/elb" = 1 }
 
-  private_subnet_tags = { "kubernetes.io/role/internal-elb" = 1 }
+  private_subnet_tags = { 
+    "kubernetes.io/role/internal-elb" = 1
+    "kubernetes.io/cluster/${local.name}" = "shared"
+  }
 
-  tags = local.tags
+  tags = merge(var.tags, local.tags)
+}
+
+###############################################################
+# Additional Subnet Groups
+###############################################################
+
+# RDS Subnets
+resource "aws_subnet" "rds" {
+  count = length(local.rds_subnets)
+
+  vpc_id            = module.vpc.vpc_id
+  cidr_block        = local.rds_subnets[count.index]
+  availability_zone = local.azs[count.index]
+
+  tags = merge(var.tags, local.tags, {
+    Name = "${local.name}-rds-${local.azs[count.index]}"
+    Type = "RDS"
+  })
+}
+
+# Firewall Subnets
+resource "aws_subnet" "firewall" {
+  count = length(local.firewall_subnets)
+
+  vpc_id            = module.vpc.vpc_id
+  cidr_block        = local.firewall_subnets[count.index]
+  availability_zone = local.azs[count.index]
+
+  tags = merge(var.tags, local.tags, {
+    Name = "${local.name}-firewall-${local.azs[count.index]}"
+    Type = "Firewall"
+  })
 }
 
 
