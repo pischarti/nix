@@ -1,4 +1,3 @@
-# Yaml manifests are provided under folder ./eks-automode-config/
 locals {
   storageclass_yamls = [
     "ebs-storageclass.yaml"
