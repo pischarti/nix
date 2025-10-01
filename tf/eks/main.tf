@@ -20,7 +20,7 @@ terraform {
     }    
   }
   backend "s3" {
-    bucket  = "terraform-state-aws-us-east-1"
+    bucket  = "terraform-state-aws-poc-us-east-1"
     key     = "eks/automode-demo/terraform.tfstate"
     region  = "us-east-1"
   }  
