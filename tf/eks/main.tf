@@ -27,7 +27,7 @@ terraform {
 }
 
 locals {
-  name   = basename(path.cwd)
+  name   = "automode-poc"
   region = "us-east-1"
 
   cluster_version = "1.33"
@@ -60,9 +60,36 @@ data "aws_availability_zones" "available" {
   }
 }
 
+# Data source to get the latest EKS-optimized AMI
+data "aws_ami" "eks_optimized" {
+  count = var.enable_managed_node_groups && var.node_group_ami_id == null ? 1 : 0
+
+  most_recent = true
+  owners      = var.ami_owners
+
+  filter {
+    name   = "name"
+    values = var.ami_name_filters
+  }
+}
+
 ###############################################################
 # EKS Cluster
 ###############################################################
+
+# Example usage for AMI specification:
+# 
+# 1. Use default EKS-optimized AMI (AL2_x86_64):
+#    terraform apply -var="enable_managed_node_groups=true"
+#
+# 2. Use custom AMI ID:
+#    terraform apply -var="enable_managed_node_groups=true" -var="node_group_ami_id=ami-1234567890abcdef0"
+#
+# 3. Use different AMI type (ARM64):
+#    terraform apply -var="enable_managed_node_groups=true" -var="node_group_ami_type=AL2_ARM_64"
+#
+# 4. Use Bottlerocket OS:
+#    terraform apply -var="enable_managed_node_groups=true" -var="node_group_ami_type=BOTTLEROCKET_x86_64"
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
@@ -78,7 +105,7 @@ module "eks" {
 
   vpc_id = module.vpc.vpc_id
 
-  subnet_ids = local.eks_subnets
+  subnet_ids = module.vpc.private_subnets
 
   enable_cluster_creator_admin_permissions = true
 
@@ -87,6 +114,52 @@ module "eks" {
     enabled    = true
     node_pools = []
   }
+
+  # Node groups configuration
+  eks_managed_node_groups = var.enable_managed_node_groups ? {
+    general = {
+      name = "general"
+
+      # Use custom AMI ID if provided, otherwise use latest EKS-optimized AMI
+      ami_id = var.node_group_ami_id != null ? var.node_group_ami_id : (var.enable_managed_node_groups && var.node_group_ami_id == null ? data.aws_ami.eks_optimized[0].id : null)
+      ami_type = var.node_group_ami_type
+
+      instance_types = ["t3.medium"]
+
+      min_size     = 1
+      max_size     = 3
+      desired_size = 2
+
+      vpc_security_group_ids = []
+      subnet_ids             = module.vpc.private_subnets
+
+      # Launch template configuration
+      launch_template_name        = "${local.name}-general"
+      launch_template_description = "EKS managed node group launch template for general purpose nodes"
+      launch_template_version     = "$Latest"
+
+      # IAM role for node group
+      iam_role_name = "${local.name}-eks-managed-node-group-general"
+
+      # Node group labels
+      labels = {
+        role = "general"
+      }
+
+      # Taints
+      taints = []
+
+      # Update configuration
+      update_config = {
+        max_unavailable_percentage = 50
+      }
+
+      # Tags
+      tags = merge(var.tags, local.tags, {
+        Name = "${local.name}-general"
+      })
+    }
+  } : {}
 
   access_entries = {
     # One access entry with a policy associated
@@ -245,4 +318,19 @@ resource "aws_subnet" "firewall" {
 output "configure_kubectl" {
   description = "Configure kubectl: make sure you're logged in with the correct AWS profile and run the following command to update your kubeconfig"
   value       = "aws eks --region ${local.region} update-kubeconfig --name ${module.eks.cluster_name}"
+}
+
+output "node_group_ami_id" {
+  description = "AMI ID used for the managed node group"
+  value       = var.enable_managed_node_groups ? (var.node_group_ami_id != null ? var.node_group_ami_id : (var.node_group_ami_id == null ? data.aws_ami.eks_optimized[0].id : null)) : null
+}
+
+output "node_group_ami_type" {
+  description = "AMI type used for the managed node group"
+  value       = var.enable_managed_node_groups ? var.node_group_ami_type : null
+}
+
+output "managed_node_groups" {
+  description = "EKS managed node groups"
+  value       = var.enable_managed_node_groups ? module.eks.eks_managed_node_groups : {}
 }
