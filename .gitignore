@@ -15,3 +15,4 @@ go/glappy/glappy
 go/aws/aws
 go/dac/output.png
 tf/eks/env/default.tfvars
+go/kaws/kaws

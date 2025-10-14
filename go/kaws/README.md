@@ -107,11 +107,66 @@ This CLI is built using the following packages:
 - [Viper](https://github.com/spf13/viper) - Configuration management with support for config files, environment variables, and flags
 - [client-go](https://github.com/kubernetes/client-go) - Kubernetes Go client library
 
+### Project Structure
+
+```
+go/kaws/
+├── main.go                      # Entry point, root command setup
+├── cmd/
+│   └── kube/
+│       ├── kube.go              # Kube command setup
+│       └── event/
+│           └── event.go         # Event subcommand implementation
+├── .kaws.yaml.example           # Example configuration file
+└── README.md
+```
+
+Each subcommand has its own package for better organization and maintainability. This structure makes it easy to add new subcommands without cluttering the parent command files.
+
 ### Adding New Commands
 
-To add new commands, create new `cobra.Command` instances and add them to the root command using `rootCmd.AddCommand()`.
+#### Adding a Kube Subcommand
 
-Example:
+To add a new subcommand under `kube`, follow the pattern used by the `event` package:
+
+1. Create a new package: `cmd/kube/mysubcmd/`
+2. Create `mysubcmd.go` with the following structure:
+
+```go
+package mysubcmd
+
+import (
+    "github.com/spf13/cobra"
+)
+
+// NewMySubCmdCmd creates the mysubcmd subcommand
+func NewMySubCmdCmd() *cobra.Command {
+    return &cobra.Command{
+        Use:   "mysubcmd",
+        Short: "Description of my subcommand",
+        RunE:  run,
+    }
+}
+
+func run(cmd *cobra.Command, args []string) error {
+    // Command logic here
+    return nil
+}
+```
+
+3. Add it to `cmd/kube/kube.go`:
+
+```go
+import "github.com/pischarti/nix/go/kaws/cmd/kube/mysubcmd"
+
+// In NewKubeCmd()
+kubeCmd.AddCommand(mysubcmd.NewMySubCmdCmd())
+```
+
+#### Adding a Top-Level Command
+
+To add a new top-level command, edit `main.go`:
+
 ```go
 myCmd := &cobra.Command{
     Use:   "mycommand",
@@ -122,4 +177,6 @@ myCmd := &cobra.Command{
 }
 rootCmd.AddCommand(myCmd)
 ```
+
+For complex commands with multiple subcommands, follow the pattern used in `cmd/kube/` and create a new package.
 
