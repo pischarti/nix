@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"github.com/pischarti/nix/go/kaws/cmd/aws/ngrecycle"
 	"github.com/pischarti/nix/go/kaws/cmd/aws/ngs"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +15,6 @@ func NewAWSCmd() *cobra.Command {
 
 	// Add subcommands
 	awsCmd.AddCommand(ngs.NewNgsCmd())
-	awsCmd.AddCommand(ngrecycle.NewNgRecycleCmd())
 
 	return awsCmd
 }

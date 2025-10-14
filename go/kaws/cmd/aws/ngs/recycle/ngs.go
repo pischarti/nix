@@ -1,4 +1,4 @@
-package ngrecycle
+package recycle
 
 import (
 	"context"
@@ -21,25 +21,25 @@ type ASGConfig struct {
 	DesiredSize int32
 }
 
-// NewNgRecycleCmd creates the ng-recycle subcommand
-func NewNgRecycleCmd() *cobra.Command {
+// NewRecycleCmd creates the recycle subcommand
+func NewRecycleCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ng-recycle [node-group-name...]",
+		Use:   "recycle [node-group-name...]",
 		Short: "Recycle EKS node groups by scaling down to zero and back up",
 		Long: `Scale down identified node groups to zero, wait for instances to terminate, 
 then scale back up to original values and wait for new instances to start.`,
-		RunE: runNgRecycle,
+		RunE: runRecycle,
 		Example: `  # Recycle a single node group
-  kaws aws ng-recycle ng-workers-1
+  kaws aws ngs recycle ng-workers-1
   
   # Recycle multiple node groups
-  kaws aws ng-recycle ng-workers-1 ng-workers-2
+  kaws aws ngs recycle ng-workers-1 ng-workers-2
   
   # With custom region
-  kaws aws ng-recycle ng-workers-1 --region us-west-2
+  kaws aws ngs recycle ng-workers-1 --region us-west-2
   
   # With custom polling interval
-  kaws aws ng-recycle ng-workers-1 --poll-interval 10s`,
+  kaws aws ngs recycle ng-workers-1 --poll-interval 10s`,
 	}
 
 	cmd.Flags().StringP("region", "r", "", "AWS region (default: from AWS config)")
@@ -49,8 +49,8 @@ then scale back up to original values and wait for new instances to start.`,
 	return cmd
 }
 
-// runNgRecycle executes the node group recycle command
-func runNgRecycle(cmd *cobra.Command, args []string) error {
+// runRecycle executes the node group recycle command
+func runRecycle(cmd *cobra.Command, args []string) error {
 	verbose := viper.GetBool("verbose")
 	region, _ := cmd.Flags().GetString("region")
 	pollInterval, _ := cmd.Flags().GetDuration("poll-interval")
@@ -59,7 +59,7 @@ func runNgRecycle(cmd *cobra.Command, args []string) error {
 	// Get node group names from args
 	nodeGroupNames := args
 	if len(nodeGroupNames) == 0 {
-		return fmt.Errorf("no node group names provided. Use: kaws aws ng-recycle <node-group-name> [node-group-name...]")
+		return fmt.Errorf("no node group names provided. Use: kaws aws ngs recycle <node-group-name> [node-group-name...]")
 	}
 
 	if verbose {

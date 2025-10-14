@@ -8,17 +8,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/pischarti/nix/go/kaws/cmd/aws/ngs/recycle"
 	awspkg "github.com/pischarti/nix/pkg/aws"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// NewNgsCmd creates the ngs (node groups) subcommand
+// NewNgsCmd creates the ngs (node groups) command with subcommands
 func NewNgsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ngs [instance-id...]",
-		Short: "Find EKS node groups for EC2 instance IDs",
-		Long:  `Query AWS EKS to find which node group each EC2 instance belongs to. Accepts instance IDs as arguments or reads from stdin (one per line).`,
+		Short: "EKS node groups management",
+		Long:  `Query and manage EKS node groups. When called with instance IDs, lists the node groups. Use subcommands for additional operations.`,
 		RunE:  runNgs,
 		Example: `  # Find node groups for specific instances
   kaws aws ngs i-1234567890abcdef0 i-0987654321fedcba0
@@ -27,12 +28,18 @@ func NewNgsCmd() *cobra.Command {
   kaws kube event --search "failed to get sandbox image" --show-instance-id --output yaml | grep instanceId | awk '{print $2}' | kaws aws ngs
   
   # Find node groups for instances with custom region
-  kaws aws ngs i-1234567890abcdef0 --region us-west-2`,
+  kaws aws ngs i-1234567890abcdef0 --region us-west-2
+  
+  # Recycle a node group
+  kaws aws ngs recycle ng-workers-1`,
 	}
 
 	// Add ngs-specific flags
 	cmd.Flags().StringP("region", "r", "", "AWS region (default: from AWS config)")
 	cmd.Flags().StringP("cluster", "c", "", "EKS cluster name (if not specified, searches all clusters)")
+
+	// Add subcommands
+	cmd.AddCommand(recycle.NewRecycleCmd())
 
 	return cmd
 }

@@ -104,6 +104,9 @@ export KAWS_VERBOSE=true
 # Find node groups for instances from event command
 ./kaws kube event --search "failed to get sandbox image" --show-instance-id --output yaml | \
   grep instanceId | awk '{print $2}' | xargs ./kaws aws ngs
+
+# Recycle a problematic node group
+./kaws aws ngs recycle ng-workers-1
 ```
 
 ## Commands
@@ -195,7 +198,7 @@ The YAML output format is useful for piping to other tools, storing event data, 
 
 #### `aws ngs`
 
-Finds the EKS node groups for given EC2 instance IDs. This command queries AWS EC2 and EKS to determine which node group each instance belongs to, making it easy to trace issues from Kubernetes events back to AWS infrastructure.
+Manages EKS node groups. When called with instance IDs, finds the EKS node groups for those EC2 instances. This command queries AWS EC2 and EKS to determine which node group each instance belongs to, making it easy to trace issues from Kubernetes events back to AWS infrastructure.
 
 **Flags:**
 - `-r, --region`: AWS region (default: from AWS config or environment)
@@ -237,9 +240,9 @@ This command is particularly useful for:
 - Correlating pod problems with underlying AWS infrastructure
 - Planning node group updates or replacements
 
-#### `aws ng-recycle`
+#### `aws ngs recycle`
 
-Recycles (restarts) EKS node groups by scaling them down to zero, waiting for all instances to terminate, then scaling back up to the original configuration. This is useful for:
+Recycles (restarts) EKS node groups by scaling them down to zero, waiting for all instances to terminate, then scaling back up to the original configuration. This is a subcommand of `ngs`. This is useful for:
 - Recovering from container runtime issues (like "failed to get sandbox image")
 - Forcing fresh instances to fix persistent node problems
 - Clearing stuck containers or zombie processes
@@ -254,17 +257,17 @@ Recycles (restarts) EKS node groups by scaling them down to zero, waiting for al
 
 Recycle a single node group:
 ```bash
-./kaws aws ng-recycle ng-workers-1
+./kaws aws ngs recycle ng-workers-1
 ```
 
 Recycle multiple node groups:
 ```bash
-./kaws aws ng-recycle ng-workers-1 ng-workers-2
+./kaws aws ngs recycle ng-workers-1 ng-workers-2
 ```
 
 With custom polling and region:
 ```bash
-./kaws aws ng-recycle ng-workers-1 --region us-west-2 --poll-interval 10s
+./kaws aws ngs recycle ng-workers-1 --region us-west-2 --poll-interval 10s
 ```
 
 **Example output:**
@@ -305,7 +308,7 @@ Identify problem → Find node group → Recycle:
 ./kaws aws ngs i-1234567890abcdef0
 
 # Step 3: Recycle the problematic node group
-./kaws aws ng-recycle ng-workers-1 --verbose
+./kaws aws ngs recycle ng-workers-1 --verbose
 ```
 
 **⚠️ Warning:** This command will temporarily reduce node group capacity to zero. Ensure you have:
@@ -330,11 +333,11 @@ nix/
 │   ├── main.go                      # Entry point, root command setup (70 lines)
 │   ├── cmd/
 │   │   ├── aws/
-│   │   │   ├── aws.go               # AWS command setup (22 lines)
-│   │   │   ├── ngs/
-│   │   │   │   └── ngs.go           # Node groups lookup (119 lines)
-│   │   │   └── ngrecycle/
-│   │   │       └── ngrecycle.go     # Node group recycle (360 lines)
+│   │   │   ├── aws.go               # AWS command setup (20 lines)
+│   │   │   └── ngs/
+│   │   │       ├── ngs.go           # Node groups management (126 lines)
+│   │   │       └── recycle/
+│   │   │           └── ngrecycle.go # Node group recycle (359 lines)
 │   │   └── kube/
 │   │       ├── kube.go              # Kube command setup (20 lines)
 │   │       └── event/
