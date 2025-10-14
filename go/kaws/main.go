@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/pischarti/nix/go/kaws/cmd/kube"
+	"github.com/pischarti/nix/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -27,7 +28,12 @@ var (
 )
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(func() {
+		if err := config.InitConfig(cfgFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error initializing config: %v\n", err)
+			os.Exit(1)
+		}
+	})
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.kaws.yaml)")
@@ -52,38 +58,6 @@ func init() {
 	// Add commands to root
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(kube.NewKubeCmd())
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting home directory: %v\n", err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".kaws" (without extension).
-		viper.AddConfigPath(home)
-		viper.AddConfigPath(".")
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".kaws")
-	}
-
-	// Read in environment variables that match
-	viper.SetEnvPrefix("KAWS")
-	viper.AutomaticEnv()
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		if viper.GetBool("verbose") {
-			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-		}
-	}
 }
 
 func main() {

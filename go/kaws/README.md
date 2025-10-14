@@ -129,22 +129,31 @@ This CLI is built using the following packages:
 ```
 nix/
 ├── go/kaws/
-│   ├── main.go                      # Entry point, root command setup
+│   ├── main.go                      # Entry point, root command setup (68 lines)
 │   ├── cmd/
 │   │   └── kube/
-│   │       ├── kube.go              # Kube command setup
+│   │       ├── kube.go              # Kube command setup (20 lines)
 │   │       └── event/
-│   │           ├── event.go         # Event subcommand implementation
-│   │           └── event_test.go    # Event command tests
+│   │           ├── event.go         # Event subcommand implementation (173 lines)
+│   │           └── event_test.go    # Event command tests (264 lines)
 │   ├── .kaws.yaml.example           # Example configuration file
 │   └── README.md
 └── pkg/
+    ├── config/
+    │   ├── viper.go                 # Viper configuration initialization
+    │   ├── viper_test.go            # Config tests
+    │   ├── kubeconfig.go            # Kubeconfig utilities
+    │   └── kubeconfig_test.go       # Kubeconfig tests
     └── k8s/
         ├── client.go                # Kubernetes client and query utilities
         └── client_test.go           # K8s package tests
 ```
 
-Each subcommand has its own package for better organization and maintainability. Common Kubernetes functionality is extracted into the `pkg/k8s` package for reusability across multiple commands. This structure makes it easy to add new subcommands without cluttering the parent command files.
+Each subcommand has its own package for better organization and maintainability. Common functionality is extracted into reusable packages:
+- **`pkg/config`**: Configuration management (Viper initialization, kubeconfig utilities)
+- **`pkg/k8s`**: Kubernetes client and query utilities
+
+This structure makes it easy to add new subcommands without cluttering the parent command files.
 
 ### Adding New Commands
 
