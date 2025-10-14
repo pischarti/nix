@@ -10,8 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	printpkg "github.com/pischarti/nix/go/pkg/print"
-	"github.com/pischarti/nix/go/pkg/vpc"
+	printpkg "github.com/pischarti/nix/pkg/print"
+	"github.com/pischarti/nix/pkg/vpc"
 	"gofr.dev/pkg/gofr"
 )
 

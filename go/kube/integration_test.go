@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pischarti/nix/go/pkg/print"
+	"github.com/pischarti/nix/pkg/print"
 )
 
 func TestPrintImagesList_Integration(t *testing.T) {

@@ -3,7 +3,7 @@ package aws
 import (
 	"testing"
 
-	"github.com/pischarti/nix/go/pkg/vpc"
+	"github.com/pischarti/nix/pkg/vpc"
 )
 
 func TestParseNLBArgs(t *testing.T) {

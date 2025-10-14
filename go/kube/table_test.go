@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/pischarti/nix/go/pkg/print"
+	"github.com/pischarti/nix/pkg/print"
 )
 
 func TestPrintImagesList(t *testing.T) {

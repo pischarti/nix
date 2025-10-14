@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/pischarti/nix/go/pkg/aws"
+	"github.com/pischarti/nix/pkg/aws"
 	"gofr.dev/pkg/gofr"
 )
 

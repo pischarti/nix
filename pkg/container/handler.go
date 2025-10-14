@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/pischarti/nix/go/pkg/config"
-	"github.com/pischarti/nix/go/pkg/print"
+	"github.com/pischarti/nix/pkg/config"
+	"github.com/pischarti/nix/pkg/print"
 )
 
 // ImagesOptions represents the parsed command line options for the images command

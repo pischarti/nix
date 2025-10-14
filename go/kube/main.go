@@ -3,7 +3,7 @@ package main
 import (
 	"gofr.dev/pkg/gofr"
 
-	"github.com/pischarti/nix/go/pkg/container"
+	"github.com/pischarti/nix/pkg/container"
 )
 
 func main() {
