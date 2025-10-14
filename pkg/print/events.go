@@ -6,6 +6,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/yaml"
 )
 
 // EventsTable prints events in a formatted table
@@ -62,4 +63,16 @@ func EventDetailed(event corev1.Event) {
 	fmt.Printf("Last Seen: %s\n", event.LastTimestamp.Format("2006-01-02 15:04:05"))
 	fmt.Printf("Message: %s\n", event.Message)
 	fmt.Println("---")
+}
+
+// EventsYAML prints events in YAML format
+func EventsYAML(events []corev1.Event) error {
+	// Convert events to YAML
+	data, err := yaml.Marshal(events)
+	if err != nil {
+		return fmt.Errorf("failed to marshal events to YAML: %w", err)
+	}
+
+	fmt.Println(string(data))
+	return nil
 }

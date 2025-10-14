@@ -59,6 +59,9 @@ export KAWS_VERBOSE=true
 # Query events in a specific namespace
 ./kaws kube event --search "ImagePullBackOff" --namespace kube-system
 
+# Output in YAML format
+./kaws kube event --search "error" --output yaml
+
 # Use verbose mode for more details
 ./kaws kube event --search "error" --verbose
 
@@ -66,7 +69,7 @@ export KAWS_VERBOSE=true
 ./kaws kube event --search "OOMKilled" --kubeconfig ~/.kube/custom-config
 
 # Use a custom config file
-./kaws --config ~/.kaws-prod.yaml kube event
+./kaws --config ~/.kaws-prod.yaml kube event --search "BackOff"
 ```
 
 ## Commands
@@ -81,6 +84,7 @@ Queries Kubernetes events across all namespaces (or a specific namespace) and fi
 
 **Flags:**
 - `-s, --search`: Search term to filter events (required)
+- `-o, --output`: Output format: `table` or `yaml` (default: `table`)
 - `-n, --namespace`: Specify a namespace to query (default: all namespaces)
 - `-k, --kubeconfig`: Path to kubeconfig file (default: `$HOME/.kube/config`)
 - `-v, --verbose`: Enable verbose output
@@ -102,7 +106,12 @@ Search for any error events:
 ./kaws kube event --search "error" --verbose
 ```
 
-**Example output:**
+Output in YAML format:
+```bash
+./kaws kube event --search "ImagePullBackOff" --output yaml
+```
+
+**Example output (table format):**
 ```
 Found 2 event(s) matching "failed to get sandbox image":
 
@@ -115,6 +124,24 @@ Found 2 event(s) matching "failed to get sandbox image":
 ```
 
 The output is formatted as a clean table using [go-pretty](https://github.com/jedib0t/go-pretty), making it easy to scan multiple events at once.
+
+**Example output (YAML format):**
+```yaml
+- metadata:
+    name: my-pod.17a6b8c9d3e1f2a4
+    namespace: default
+  involvedObject:
+    kind: Pod
+    name: my-pod
+  reason: FailedCreatePodSandBox
+  message: Failed to create pod sandbox: rpc error: code = Unknown desc = failed to get sandbox image "registry.k8s.io/pause:3.9"
+  type: Warning
+  count: 5
+  firstTimestamp: "2024-10-14T10:30:00Z"
+  lastTimestamp: "2024-10-14T10:35:00Z"
+```
+
+The YAML output format is useful for piping to other tools, storing event data, or integrating with automation scripts.
 
 ## Development
 
