@@ -53,17 +53,17 @@ export KAWS_VERBOSE=true
 # Show help
 ./kaws --help
 
-# Query for Kubernetes events matching "failed to get sandbox image"
-./kaws kube event
+# Query for Kubernetes events matching a specific term
+./kaws kube event --search "failed to get sandbox image"
 
 # Query events in a specific namespace
-./kaws kube event --namespace kube-system
+./kaws kube event --search "ImagePullBackOff" --namespace kube-system
 
 # Use verbose mode for more details
-./kaws kube event --verbose
+./kaws kube event --search "error" --verbose
 
 # Use a custom kubeconfig file
-./kaws kube event --kubeconfig ~/.kube/custom-config
+./kaws kube event --search "OOMKilled" --kubeconfig ~/.kube/custom-config
 
 # Use a custom config file
 ./kaws --config ~/.kaws-prod.yaml kube event
@@ -77,16 +77,34 @@ Parent command for all Kubernetes-related operations.
 
 #### `kube event`
 
-Queries Kubernetes events across all namespaces (or a specific namespace) and filters for events containing the message "failed to get sandbox image". This is useful for troubleshooting pod startup issues related to container runtime problems.
+Queries Kubernetes events across all namespaces (or a specific namespace) and filters them by message content. This is useful for troubleshooting various Kubernetes issues by searching for specific error messages or patterns.
 
 **Flags:**
+- `-s, --search`: Search term to filter events (required)
 - `-n, --namespace`: Specify a namespace to query (default: all namespaces)
 - `-k, --kubeconfig`: Path to kubeconfig file (default: `$HOME/.kube/config`)
 - `-v, --verbose`: Enable verbose output
 
+**Examples:**
+
+Search for sandbox image issues:
+```bash
+./kaws kube event --search "failed to get sandbox image"
+```
+
+Search for image pull errors in a specific namespace:
+```bash
+./kaws kube event --search "ImagePullBackOff" --namespace default
+```
+
+Search for any error events:
+```bash
+./kaws kube event --search "error" --verbose
+```
+
 **Example output:**
 ```
-Found 2 event(s) matching 'failed to get sandbox image':
+Found 2 event(s) matching "failed to get sandbox image":
 
 Namespace: default
 Name: my-pod.17a6b8c9d3e1f2a4
@@ -110,18 +128,24 @@ This CLI is built using the following packages:
 ### Project Structure
 
 ```
-go/kaws/
-├── main.go                      # Entry point, root command setup
-├── cmd/
-│   └── kube/
-│       ├── kube.go              # Kube command setup
-│       └── event/
-│           └── event.go         # Event subcommand implementation
-├── .kaws.yaml.example           # Example configuration file
-└── README.md
+nix/
+├── go/kaws/
+│   ├── main.go                      # Entry point, root command setup
+│   ├── cmd/
+│   │   └── kube/
+│   │       ├── kube.go              # Kube command setup
+│   │       └── event/
+│   │           ├── event.go         # Event subcommand implementation
+│   │           └── event_test.go    # Event command tests
+│   ├── .kaws.yaml.example           # Example configuration file
+│   └── README.md
+└── pkg/
+    └── k8s/
+        ├── client.go                # Kubernetes client and query utilities
+        └── client_test.go           # K8s package tests
 ```
 
-Each subcommand has its own package for better organization and maintainability. This structure makes it easy to add new subcommands without cluttering the parent command files.
+Each subcommand has its own package for better organization and maintainability. Common Kubernetes functionality is extracted into the `pkg/k8s` package for reusability across multiple commands. This structure makes it easy to add new subcommands without cluttering the parent command files.
 
 ### Adding New Commands
 

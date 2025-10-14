@@ -3,50 +3,35 @@ package event
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
+	"github.com/pischarti/nix/pkg/k8s"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 // NewEventCmd creates the event subcommand
 func NewEventCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "event",
-		Short: "Query for Kubernetes events matching 'failed to get sandbox image'",
-		Long:  `Query Kubernetes events across all namespaces (or a specific namespace) for events containing "failed to get sandbox image"`,
+		Short: "Query and filter Kubernetes events",
+		Long:  `Query Kubernetes events across all namespaces (or a specific namespace) and filter by message content`,
 		RunE:  runEvent,
-	}
-}
-
-// getKubeClient creates a Kubernetes clientset from the configured kubeconfig
-func getKubeClient() (*kubernetes.Clientset, error) {
-	// Try to get kubeconfig from flag first, then viper (config file), then default
-	kubeconfig := viper.GetString("kubeconfig")
-	if kubeconfig == "" {
-		if home := homedir.HomeDir(); home != "" {
-			kubeconfig = filepath.Join(home, ".kube", "config")
-		}
+		Example: `  # Filter events containing "failed to get sandbox image"
+  kaws kube event --search "failed to get sandbox image"
+  
+  # Filter events in a specific namespace
+  kaws kube event --search "ImagePullBackOff" --namespace default
+  
+  # Filter events with case-insensitive search
+  kaws kube event --search "error"`,
 	}
 
-	// Build config from kubeconfig file
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
-	}
+	// Add event-specific flags
+	cmd.Flags().StringP("search", "s", "", "search term to filter events (required)")
+	cmd.MarkFlagRequired("search")
 
-	// Create clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Kubernetes client: %w", err)
-	}
-
-	return clientset, nil
+	return cmd
 }
 
 // runEvent executes the event query command
@@ -55,8 +40,14 @@ func runEvent(cmd *cobra.Command, args []string) error {
 	verbose := viper.GetBool("verbose")
 	namespace := viper.GetString("namespace")
 
+	// Get search term from flag
+	searchTerm, err := cmd.Flags().GetString("search")
+	if err != nil {
+		return fmt.Errorf("failed to get search flag: %w", err)
+	}
+
 	// Get Kubernetes client
-	clientset, err := getKubeClient()
+	client, err := k8s.NewClient()
 	if err != nil {
 		return err
 	}
@@ -67,50 +58,64 @@ func runEvent(cmd *cobra.Command, args []string) error {
 		} else {
 			fmt.Println("Querying events in all namespaces")
 		}
+		fmt.Printf("Filtering for events containing: %q\n", searchTerm)
 	}
 
-	// Query events
-	events, err := clientset.CoreV1().Events(namespace).List(context.Background(), metav1.ListOptions{})
+	// Query events using the common k8s package
+	events, err := client.QueryEvents(context.Background(), k8s.EventQueryOptions{
+		Namespace: namespace,
+	})
 	if err != nil {
-		return fmt.Errorf("failed to list events: %w", err)
+		return err
 	}
 
-	// Filter events matching "failed to get sandbox image"
-	matchingEvents := []corev1.Event{}
-	searchTerm := "failed to get sandbox image"
-
-	for _, event := range events.Items {
-		if contains(event.Message, searchTerm) {
-			matchingEvents = append(matchingEvents, event)
-		}
-	}
+	// Filter events matching the search term
+	matchingEvents := FilterEvents(events, searchTerm)
 
 	// Display results
 	if len(matchingEvents) == 0 {
-		fmt.Println("No events found matching 'failed to get sandbox image'")
+		fmt.Printf("No events found matching %q\n", searchTerm)
 		return nil
 	}
 
-	fmt.Printf("Found %d event(s) matching 'failed to get sandbox image':\n\n", len(matchingEvents))
+	fmt.Printf("Found %d event(s) matching %q:\n\n", len(matchingEvents), searchTerm)
 
 	for _, event := range matchingEvents {
-		fmt.Printf("Namespace: %s\n", event.Namespace)
-		fmt.Printf("Name: %s\n", event.Name)
-		fmt.Printf("Type: %s\n", event.Type)
-		fmt.Printf("Reason: %s\n", event.Reason)
-		fmt.Printf("Object: %s/%s\n", event.InvolvedObject.Kind, event.InvolvedObject.Name)
-		fmt.Printf("Count: %d\n", event.Count)
-		fmt.Printf("First Seen: %s\n", event.FirstTimestamp.Format("2006-01-02 15:04:05"))
-		fmt.Printf("Last Seen: %s\n", event.LastTimestamp.Format("2006-01-02 15:04:05"))
-		fmt.Printf("Message: %s\n", event.Message)
-		fmt.Println("---")
+		DisplayEvent(event)
 	}
 
 	return nil
 }
 
-// contains checks if a string contains a substring
-func contains(s, substr string) bool {
+// FilterEvents filters events by search term in the message field
+func FilterEvents(events []corev1.Event, searchTerm string) []corev1.Event {
+	matchingEvents := []corev1.Event{}
+
+	for _, event := range events {
+		if Contains(event.Message, searchTerm) {
+			matchingEvents = append(matchingEvents, event)
+		}
+	}
+
+	return matchingEvents
+}
+
+// DisplayEvent prints event details in a formatted way
+func DisplayEvent(event corev1.Event) {
+	fmt.Printf("Namespace: %s\n", event.Namespace)
+	fmt.Printf("Name: %s\n", event.Name)
+	fmt.Printf("Type: %s\n", event.Type)
+	fmt.Printf("Reason: %s\n", event.Reason)
+	fmt.Printf("Object: %s/%s\n", event.InvolvedObject.Kind, event.InvolvedObject.Name)
+	fmt.Printf("Count: %d\n", event.Count)
+	fmt.Printf("First Seen: %s\n", event.FirstTimestamp.Format("2006-01-02 15:04:05"))
+	fmt.Printf("Last Seen: %s\n", event.LastTimestamp.Format("2006-01-02 15:04:05"))
+	fmt.Printf("Message: %s\n", event.Message)
+	fmt.Println("---")
+}
+
+// Contains checks if a string contains a substring
+func Contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
 		(findSubstring(s, substr) != -1))
 }
