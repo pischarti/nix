@@ -1,0 +1,12 @@
+# kaws configuration file
+# Place this file at ~/.kaws.yaml or ./.kaws.yaml
+
+# Kubernetes configuration
+kubeconfig: ~/.kube/config
+
+# Default namespace for queries (leave empty for all namespaces)
+namespace: ""
+
+# Enable verbose output
+verbose: false
+

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -15,6 +16,8 @@ import (
 )
 
 var (
+	cfgFile string
+
 	// Root command
 	rootCmd = &cobra.Command{
 		Use:   "kaws",
@@ -30,10 +33,18 @@ var (
 )
 
 func init() {
+	cobra.OnInitialize(initConfig)
+
 	// Global flags
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.kaws.yaml)")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringP("kubeconfig", "k", "", "path to kubeconfig file (default: $HOME/.kube/config)")
 	rootCmd.PersistentFlags().StringP("namespace", "n", "", "namespace to query (default: all namespaces)")
+
+	// Bind flags to viper
+	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
+	viper.BindPFlag("namespace", rootCmd.PersistentFlags().Lookup("namespace"))
 
 	// Version command
 	versionCmd := &cobra.Command{
@@ -67,10 +78,41 @@ func init() {
 	rootCmd.AddCommand(kubeCmd)
 }
 
-func getKubeClient(cmd *cobra.Command) (*kubernetes.Clientset, error) {
-	kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
+// initConfig reads in config file and ENV variables if set.
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting home directory: %v\n", err)
+			os.Exit(1)
+		}
 
-	// If kubeconfig not specified, use default location
+		// Search config in home directory with name ".kaws" (without extension).
+		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
+		viper.SetConfigType("yaml")
+		viper.SetConfigName(".kaws")
+	}
+
+	// Read in environment variables that match
+	viper.SetEnvPrefix("KAWS")
+	viper.AutomaticEnv()
+
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		if viper.GetBool("verbose") {
+			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		}
+	}
+}
+
+func getKubeClient(cmd *cobra.Command) (*kubernetes.Clientset, error) {
+	// Try to get kubeconfig from flag first, then viper (config file), then default
+	kubeconfig := viper.GetString("kubeconfig")
 	if kubeconfig == "" {
 		if home := homedir.HomeDir(); home != "" {
 			kubeconfig = filepath.Join(home, ".kube", "config")
@@ -93,8 +135,9 @@ func getKubeClient(cmd *cobra.Command) (*kubernetes.Clientset, error) {
 }
 
 func runKubeEvent(cmd *cobra.Command, args []string) error {
-	verbose, _ := cmd.Flags().GetBool("verbose")
-	namespace, _ := cmd.Flags().GetString("namespace")
+	// Get values from viper (which includes flag values, config file, and env vars)
+	verbose := viper.GetBool("verbose")
+	namespace := viper.GetString("namespace")
 
 	// Get Kubernetes client
 	clientset, err := getKubeClient(cmd)

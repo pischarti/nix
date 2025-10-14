@@ -9,6 +9,38 @@ cd /Users/steve/dev/nix/go/kaws
 go build -o kaws
 ```
 
+## Configuration
+
+`kaws` supports configuration through multiple sources (in order of precedence):
+1. Command-line flags (highest priority)
+2. Environment variables (prefixed with `KAWS_`)
+3. Configuration file (lowest priority)
+
+### Configuration File
+
+Create a `.kaws.yaml` file in your home directory (`~/.kaws.yaml`) or current directory:
+
+```yaml
+# kaws configuration file
+kubeconfig: ~/.kube/config
+namespace: ""  # Leave empty for all namespaces
+verbose: false
+```
+
+You can also specify a custom config file location:
+```bash
+./kaws --config /path/to/config.yaml kube event
+```
+
+### Environment Variables
+
+Set environment variables with the `KAWS_` prefix:
+```bash
+export KAWS_NAMESPACE=kube-system
+export KAWS_VERBOSE=true
+./kaws kube event
+```
+
 ## Usage
 
 ```bash
@@ -32,6 +64,9 @@ go build -o kaws
 
 # Use a custom kubeconfig file
 ./kaws kube event --kubeconfig ~/.kube/custom-config
+
+# Use a custom config file
+./kaws --config ~/.kaws-prod.yaml kube event
 ```
 
 ## Commands
@@ -67,7 +102,10 @@ Message: Failed to create pod sandbox: rpc error: code = Unknown desc = failed t
 
 ## Development
 
-This CLI is built using the [Cobra](https://github.com/spf13/cobra) package, which provides a powerful framework for building CLI applications.
+This CLI is built using the following packages:
+- [Cobra](https://github.com/spf13/cobra) - Powerful framework for building CLI applications
+- [Viper](https://github.com/spf13/viper) - Configuration management with support for config files, environment variables, and flags
+- [client-go](https://github.com/kubernetes/client-go) - Kubernetes Go client library
 
 ### Adding New Commands
 
