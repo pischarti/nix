@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/pischarti/nix/go/pkg/vpc"
+	"github.com/pischarti/nix/pkg/vpc"
 )
 
 // PrintNLBTable prints NLBs in a table format

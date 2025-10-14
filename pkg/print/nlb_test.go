@@ -3,7 +3,7 @@ package print
 import (
 	"testing"
 
-	"github.com/pischarti/nix/go/pkg/vpc"
+	"github.com/pischarti/nix/pkg/vpc"
 )
 
 func TestPrintNLBTable(t *testing.T) {

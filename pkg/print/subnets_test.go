@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pischarti/nix/go/pkg/vpc"
+	"github.com/pischarti/nix/pkg/vpc"
 )
 
 func TestPrintSubnetsTableString(t *testing.T) {
