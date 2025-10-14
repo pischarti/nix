@@ -22,21 +22,25 @@ go build -o kaws
 ./kaws --help
 
 # Query for Kubernetes events matching "failed to get sandbox image"
-./kaws kube-event
+./kaws kube event
 
 # Query events in a specific namespace
-./kaws kube-event --namespace kube-system
+./kaws kube event --namespace kube-system
 
 # Use verbose mode for more details
-./kaws kube-event --verbose
+./kaws kube event --verbose
 
 # Use a custom kubeconfig file
-./kaws kube-event --kubeconfig ~/.kube/custom-config
+./kaws kube event --kubeconfig ~/.kube/custom-config
 ```
 
 ## Commands
 
-### `kube-event`
+### `kube`
+
+Parent command for all Kubernetes-related operations.
+
+#### `kube event`
 
 Queries Kubernetes events across all namespaces (or a specific namespace) and filters for events containing the message "failed to get sandbox image". This is useful for troubleshooting pod startup issues related to container runtime problems.
 

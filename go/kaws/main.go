@@ -44,16 +44,27 @@ func init() {
 		},
 	}
 
-	// Kube-event command
-	kubeEventCmd := &cobra.Command{
-		Use:   "kube-event",
+	// Kube command (parent for Kubernetes-related subcommands)
+	kubeCmd := &cobra.Command{
+		Use:   "kube",
+		Short: "Kubernetes related commands",
+		Long:  `Commands for interacting with Kubernetes clusters`,
+	}
+
+	// Event subcommand under kube
+	eventCmd := &cobra.Command{
+		Use:   "event",
 		Short: "Query for Kubernetes events matching 'failed to get sandbox image'",
 		Long:  `Query Kubernetes events across all namespaces (or a specific namespace) for events containing "failed to get sandbox image"`,
 		RunE:  runKubeEvent,
 	}
 
+	// Add event as subcommand of kube
+	kubeCmd.AddCommand(eventCmd)
+
+	// Add commands to root
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(kubeEventCmd)
+	rootCmd.AddCommand(kubeCmd)
 }
 
 func getKubeClient(cmd *cobra.Command) (*kubernetes.Clientset, error) {
