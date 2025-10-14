@@ -9,6 +9,36 @@ cd /Users/steve/dev/nix/go/kaws
 go build -o kaws
 ```
 
+## Complete Troubleshooting Workflow
+
+Here's a complete example workflow tracing a Kubernetes issue back to AWS infrastructure:
+
+```bash
+# Step 1: Find pods with sandbox image issues
+./kaws kube event --search "failed to get sandbox image" --show-instance-id
+
+# Output shows:
+# - Which pods are affected
+# - Which nodes they're on
+# - Which EC2 instances those nodes are
+
+# Step 2: Get the node groups for those EC2 instances
+./kaws aws ngs i-1234567890abcdef0 i-0987654321fedcba0
+
+# Output shows:
+# - Which EKS cluster the instances belong to
+# - Which node group they're in
+# - Instance types
+
+# Step 3: Take action based on findings
+# - Update node group configuration
+# - Replace problematic instances
+# - Scale node groups
+# - Check AWS CloudWatch metrics for those instances
+```
+
+This workflow enables you to quickly trace Kubernetes pod issues back to specific AWS EKS node groups, making it easy to identify and remediate infrastructure-level problems.
+
 ## Configuration
 
 `kaws` supports configuration through multiple sources (in order of precedence):
@@ -70,6 +100,10 @@ export KAWS_VERBOSE=true
 
 # Use a custom config file
 ./kaws --config ~/.kaws-prod.yaml kube event --search "BackOff"
+
+# Find node groups for instances from event command
+./kaws kube event --search "failed to get sandbox image" --show-instance-id --output yaml | \
+  grep instanceId | awk '{print $2}' | xargs ./kaws aws ngs
 ```
 
 ## Commands
@@ -77,6 +111,10 @@ export KAWS_VERBOSE=true
 ### `kube`
 
 Parent command for all Kubernetes-related operations.
+
+### `aws`
+
+Parent command for all AWS-related operations.
 
 #### `kube event`
 
@@ -155,6 +193,50 @@ When using the `--show-instance-id` flag, the table includes an additional colum
 
 The YAML output format is useful for piping to other tools, storing event data, or integrating with automation scripts.
 
+#### `aws ngs`
+
+Finds the EKS node groups for given EC2 instance IDs. This command queries AWS EC2 and EKS to determine which node group each instance belongs to, making it easy to trace issues from Kubernetes events back to AWS infrastructure.
+
+**Flags:**
+- `-r, --region`: AWS region (default: from AWS config or environment)
+- `-c, --cluster`: EKS cluster name (if not specified, searches all clusters)
+
+**Examples:**
+
+Find node groups for specific instances:
+```bash
+./kaws aws ngs i-1234567890abcdef0 i-0987654321fedcba0
+```
+
+Pipe instance IDs from event command:
+```bash
+./kaws kube event --search "failed to get sandbox image" --show-instance-id --output yaml | \
+  grep instanceId | awk '{print $2}' | xargs ./kaws aws ngs
+```
+
+Specify AWS region:
+```bash
+./kaws aws ngs i-1234567890abcdef0 --region us-west-2
+```
+
+**Example output:**
+```
+Found node group information for 2 instance(s):
+
+┌─────────────────────────┬──────────────┬─────────────────┬───────────────┐
+│ Instance ID             │ Cluster      │ Node Group      │ Instance Type │
+├─────────────────────────┼──────────────┼─────────────────┼───────────────┤
+│ i-1234567890abcdef0     │ my-cluster   │ ng-workers-1    │ t3.large      │
+│ i-0987654321fedcba0     │ my-cluster   │ ng-workers-2    │ t3.xlarge     │
+└─────────────────────────┴──────────────┴─────────────────┴───────────────┘
+```
+
+This command is particularly useful for:
+- Tracing Kubernetes events back to specific EKS node groups
+- Identifying which node group is experiencing issues
+- Correlating pod problems with underlying AWS infrastructure
+- Planning node group updates or replacements
+
 ## Development
 
 This CLI is built using the following packages:
@@ -162,35 +244,53 @@ This CLI is built using the following packages:
 - [Viper](https://github.com/spf13/viper) - Configuration management with support for config files, environment variables, and flags
 - [go-pretty](https://github.com/jedib0t/go-pretty) - Beautiful table formatting for terminal output
 - [client-go](https://github.com/kubernetes/client-go) - Kubernetes Go client library
+- [AWS SDK for Go v2](https://github.com/aws/aws-sdk-go-v2) - AWS service integration
 
 ### Project Structure
 
 ```
 nix/
 ├── go/kaws/
-│   ├── main.go                      # Entry point, root command setup (68 lines)
+│   ├── main.go                      # Entry point, root command setup (70 lines)
 │   ├── cmd/
+│   │   ├── aws/
+│   │   │   ├── aws.go               # AWS command setup (20 lines)
+│   │   │   └── ngs/
+│   │   │       └── ngs.go           # Node groups subcommand (119 lines)
 │   │   └── kube/
 │   │       ├── kube.go              # Kube command setup (20 lines)
 │   │       └── event/
-│   │           ├── event.go         # Event subcommand implementation (173 lines)
-│   │           └── event_test.go    # Event command tests (264 lines)
+│   │           ├── event.go         # Event subcommand (129 lines)
+│   │           └── event_test.go    # Event tests (204 lines)
 │   ├── .kaws.yaml.example           # Example configuration file
 │   └── README.md
 └── pkg/
+    ├── aws/
+    │   ├── nodegroups.go            # Node group queries (102 lines)
+    │   ├── ecr.go                   # ECR utilities
+    │   ├── nlb.go                   # NLB utilities
+    │   └── subnets.go               # Subnet utilities
     ├── config/
-    │   ├── viper.go                 # Viper configuration initialization
-    │   ├── viper_test.go            # Config tests
+    │   ├── viper.go                 # Viper configuration (42 lines)
+    │   ├── viper_test.go            # Config tests (80 lines)
     │   ├── kubeconfig.go            # Kubeconfig utilities
     │   └── kubeconfig_test.go       # Kubeconfig tests
-    └── k8s/
-        ├── client.go                # Kubernetes client and query utilities
-        └── client_test.go           # K8s package tests
+    ├── k8s/
+    │   ├── client.go                # K8s client creation (42 lines)
+    │   ├── client_test.go           # Client tests (45 lines)
+    │   ├── event.go                 # Event query & enrichment (177 lines)
+    │   └── filter_test.go           # Filter tests (264 lines)
+    └── print/
+        ├── events.go                # Event display functions (176 lines)
+        ├── events_test.go           # Display tests (62 lines)
+        └── [other print utilities]
 ```
 
 Each subcommand has its own package for better organization and maintainability. Common functionality is extracted into reusable packages:
+- **`pkg/aws`**: AWS service queries (node groups, ECR, NLB, subnets)
 - **`pkg/config`**: Configuration management (Viper initialization, kubeconfig utilities)
-- **`pkg/k8s`**: Kubernetes client and query utilities
+- **`pkg/k8s`**: Kubernetes client, event query, and enrichment utilities
+- **`pkg/print`**: Display and formatting functions for various output types
 
 This structure makes it easy to add new subcommands without cluttering the parent command files.
 

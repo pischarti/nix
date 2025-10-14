@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pischarti/nix/go/kaws/cmd/aws"
 	"github.com/pischarti/nix/go/kaws/cmd/kube"
 	"github.com/pischarti/nix/pkg/config"
 	"github.com/spf13/cobra"
@@ -58,6 +59,7 @@ func init() {
 	// Add commands to root
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(kube.NewKubeCmd())
+	rootCmd.AddCommand(aws.NewAWSCmd())
 }
 
 func main() {
