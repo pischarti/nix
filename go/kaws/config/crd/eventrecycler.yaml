@@ -1,0 +1,90 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: eventrecyclers.kaws.pischarti.dev
+spec:
+  group: kaws.pischarti.dev
+  names:
+    kind: EventRecycler
+    listKind: EventRecyclerList
+    plural: eventrecyclers
+    singular: eventrecycler
+    shortNames:
+      - er
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - searchTerms
+              properties:
+                watchInterval:
+                  type: string
+                  default: "60s"
+                  description: How often to check for error events
+                searchTerms:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                  description: Error messages to watch for in events
+                threshold:
+                  type: integer
+                  minimum: 1
+                  default: 5
+                  description: Number of matching events before triggering recycle
+                dryRun:
+                  type: boolean
+                  default: false
+                  description: Log actions without actually recycling
+                awsRegion:
+                  type: string
+                  description: AWS region for node group operations
+                pollInterval:
+                  type: string
+                  default: "15s"
+                  description: Interval for polling instance states
+                recycleTimeout:
+                  type: string
+                  default: "20m"
+                  description: Maximum time to wait for recycle
+            status:
+              type: object
+              properties:
+                lastCheckTime:
+                  type: string
+                  format: date-time
+                  description: Last time events were checked
+                activeRecycles:
+                  type: array
+                  items:
+                    type: string
+                  description: Node groups currently being recycled
+                recycleHistory:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      nodeGroup:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                      eventCount:
+                        type: integer
+                      status:
+                        type: string
+                eventCounts:
+                  type: object
+                  additionalProperties:
+                    type: integer
+      subresources:
+        status: {}
+

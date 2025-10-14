@@ -6,6 +6,7 @@ import (
 
 	"github.com/pischarti/nix/go/kaws/cmd/aws"
 	"github.com/pischarti/nix/go/kaws/cmd/kube"
+	"github.com/pischarti/nix/go/kaws/cmd/operator"
 	"github.com/pischarti/nix/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,6 +61,7 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(kube.NewKubeCmd())
 	rootCmd.AddCommand(aws.NewAWSCmd())
+	rootCmd.AddCommand(operator.NewOperatorCmd())
 }
 
 func main() {

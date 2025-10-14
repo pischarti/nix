@@ -1,0 +1,29 @@
+# kaws operator configuration file
+# Place this file at ~/.kaws-operator.yaml or specify with --config
+
+# Kubernetes configuration
+kubeconfig: ~/.kube/config
+
+# AWS configuration
+# region: us-east-1  # Optional, uses AWS default if not specified
+
+# Operator settings
+operator:
+  # How often to check for error events
+  watch_interval: 60s
+  
+  # Search terms to watch for
+  search_terms:
+    - "failed to get sandbox image"
+    - "ImagePullBackOff"
+    - "Error: image pull failed"
+  
+  # Number of matching events before triggering recycle
+  threshold: 5
+  
+  # Dry run mode - log actions without executing
+  dry_run: false
+
+# Verbose logging
+verbose: true
+

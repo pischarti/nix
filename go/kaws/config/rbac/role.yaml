@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kaws-operator
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kaws-operator
+rules:
+# Events - for monitoring Kubernetes events
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+# Pods and Nodes - for enriching events with node/instance info
+- apiGroups: [""]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+# EventRecycler CRD - for CRD-based configuration
+- apiGroups: ["kaws.pischarti.dev"]
+  resources: ["eventrecyclers"]
+  verbs: ["get", "list", "watch"]
+# EventRecycler status - for updating CR status
+- apiGroups: ["kaws.pischarti.dev"]
+  resources: ["eventrecyclers/status"]
+  verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kaws-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kaws-operator
+subjects:
+- kind: ServiceAccount
+  name: kaws-operator
+  namespace: kube-system
+

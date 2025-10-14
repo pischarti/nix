@@ -1,0 +1,15 @@
+apiVersion: kaws.pischarti.dev/v1alpha1
+kind: EventRecycler
+metadata:
+  name: sandbox-image-recycler
+spec:
+  watchInterval: "60s"
+  searchTerms:
+    - "failed to get sandbox image"
+    - "ImagePullBackOff"
+  threshold: 5
+  dryRun: false
+  awsRegion: "us-east-1"
+  pollInterval: "15s"
+  recycleTimeout: "20m"
+

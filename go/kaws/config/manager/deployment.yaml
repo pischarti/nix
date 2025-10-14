@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kaws-operator
+  namespace: kube-system
+  labels:
+    app: kaws-operator
+    app.kubernetes.io/name: kaws-operator
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/part-of: kaws
+spec:
+  # Leader election enabled - safe to run multiple replicas for high availability
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kaws-operator
+  template:
+    metadata:
+      labels:
+        app: kaws-operator
+    spec:
+      serviceAccountName: kaws-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: operator
+        image: your-registry/kaws-operator:latest
+        imagePullPolicy: Always
+        command: 
+        - /kaws
+        args:
+        - operator
+        - --use-crd
+        - --verbose
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+        # For IRSA (IAM Roles for Service Accounts) on EKS
+        # - name: AWS_ROLE_ARN
+        #   value: "arn:aws:iam::ACCOUNT_ID:role/kaws-operator-role"
+        # - name: AWS_WEB_IDENTITY_TOKEN_FILE
+        #   value: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+

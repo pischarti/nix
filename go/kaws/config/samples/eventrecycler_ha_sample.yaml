@@ -1,0 +1,66 @@
+apiVersion: kaws.pischarti.dev/v1alpha1
+kind: EventRecycler
+metadata:
+  labels:
+    app.kubernetes.io/name: eventrecycler
+    app.kubernetes.io/instance: production-recycler
+    app.kubernetes.io/part-of: kaws
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kaws
+  name: production-recycler
+  namespace: default
+spec:
+  # Check for problematic events every minute
+  watchInterval: "60s"
+  
+  # Search for multiple error patterns
+  searchTerms:
+    - "failed to get sandbox image"
+    - "ImagePullBackOff"
+    - "ErrImagePull"
+    - "CrashLoopBackOff"
+  
+  # Trigger recycle after 5 matching events on a node group
+  threshold: 5
+  
+  # Set to false for production (actually recycle node groups)
+  dryRun: false
+  
+  # AWS region for node group operations
+  awsRegion: "us-east-1"
+  
+  # Poll instance states every 15 seconds during recycle
+  pollInterval: "15s"
+  
+  # Maximum time to wait for recycle to complete
+  recycleTimeout: "20m"
+
+---
+# PodDisruptionBudget to ensure at least one operator replica is always available
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kaws-operator
+  namespace: kube-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: kaws-operator
+
+---
+# ServiceMonitor for Prometheus (optional - requires prometheus-operator)
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: kaws-operator
+#   namespace: kube-system
+# spec:
+#   selector:
+#     matchLabels:
+#       app: kaws-operator
+#   endpoints:
+#   - port: metrics
+#     path: /metrics
+#     interval: 30s
+
