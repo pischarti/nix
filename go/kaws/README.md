@@ -21,8 +21,44 @@ go build -o kaws
 # Show help
 ./kaws --help
 
-# Use verbose mode
-./kaws --verbose
+# Query for Kubernetes events matching "failed to get sandbox image"
+./kaws kube-event
+
+# Query events in a specific namespace
+./kaws kube-event --namespace kube-system
+
+# Use verbose mode for more details
+./kaws kube-event --verbose
+
+# Use a custom kubeconfig file
+./kaws kube-event --kubeconfig ~/.kube/custom-config
+```
+
+## Commands
+
+### `kube-event`
+
+Queries Kubernetes events across all namespaces (or a specific namespace) and filters for events containing the message "failed to get sandbox image". This is useful for troubleshooting pod startup issues related to container runtime problems.
+
+**Flags:**
+- `-n, --namespace`: Specify a namespace to query (default: all namespaces)
+- `-k, --kubeconfig`: Path to kubeconfig file (default: `$HOME/.kube/config`)
+- `-v, --verbose`: Enable verbose output
+
+**Example output:**
+```
+Found 2 event(s) matching 'failed to get sandbox image':
+
+Namespace: default
+Name: my-pod.17a6b8c9d3e1f2a4
+Type: Warning
+Reason: FailedCreatePodSandBox
+Object: Pod/my-pod
+Count: 5
+First Seen: 2024-10-14 10:30:00
+Last Seen: 2024-10-14 10:35:00
+Message: Failed to create pod sandbox: rpc error: code = Unknown desc = failed to get sandbox image...
+---
 ```
 
 ## Development
