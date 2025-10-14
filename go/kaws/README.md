@@ -106,23 +106,22 @@ Search for any error events:
 ```
 Found 2 event(s) matching "failed to get sandbox image":
 
-Namespace: default
-Name: my-pod.17a6b8c9d3e1f2a4
-Type: Warning
-Reason: FailedCreatePodSandBox
-Object: Pod/my-pod
-Count: 5
-First Seen: 2024-10-14 10:30:00
-Last Seen: 2024-10-14 10:35:00
-Message: Failed to create pod sandbox: rpc error: code = Unknown desc = failed to get sandbox image...
----
+┌───────────┬─────────┬───────────────────────┬──────────────┬───────┬─────────────────────┬─────────────────────────────────────────────────────────────────────────────────┐
+│ Namespace │ Type    │ Reason                │ Object       │ Count │ Last Seen           │ Message                                                                         │
+├───────────┼─────────┼───────────────────────┼──────────────┼───────┼─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ default   │ Warning │ FailedCreatePodSandBox│ Pod/my-pod   │     5 │ 2024-10-14 10:35:00 │ Failed to create pod sandbox: rpc error: code = Unknown desc = failed to ge... │
+│ default   │ Warning │ FailedCreatePodSandBox│ Pod/my-app   │     3 │ 2024-10-14 10:32:00 │ Failed to create pod sandbox: rpc error: code = Unknown desc = failed to ge... │
+└───────────┴─────────┴───────────────────────┴──────────────┴───────┴─────────────────────┴─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+The output is formatted as a clean table using [go-pretty](https://github.com/jedib0t/go-pretty), making it easy to scan multiple events at once.
 
 ## Development
 
 This CLI is built using the following packages:
 - [Cobra](https://github.com/spf13/cobra) - Powerful framework for building CLI applications
 - [Viper](https://github.com/spf13/viper) - Configuration management with support for config files, environment variables, and flags
+- [go-pretty](https://github.com/jedib0t/go-pretty) - Beautiful table formatting for terminal output
 - [client-go](https://github.com/kubernetes/client-go) - Kubernetes Go client library
 
 ### Project Structure
