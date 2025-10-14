@@ -72,7 +72,7 @@ func runEvent(cmd *cobra.Command, args []string) error {
 	}
 
 	// Filter events matching the search term
-	matchingEvents := FilterEvents(events, searchTerm)
+	matchingEvents := k8s.FilterEvents(events, searchTerm)
 
 	// Display results
 	if len(matchingEvents) == 0 {
@@ -85,19 +85,6 @@ func runEvent(cmd *cobra.Command, args []string) error {
 	DisplayEventsTable(matchingEvents)
 
 	return nil
-}
-
-// FilterEvents filters events by search term in the message field
-func FilterEvents(events []corev1.Event, searchTerm string) []corev1.Event {
-	matchingEvents := []corev1.Event{}
-
-	for _, event := range events {
-		if Contains(event.Message, searchTerm) {
-			matchingEvents = append(matchingEvents, event)
-		}
-	}
-
-	return matchingEvents
 }
 
 // DisplayEventsTable prints events in a formatted table
@@ -154,20 +141,4 @@ func DisplayEvent(event corev1.Event) {
 	fmt.Printf("Last Seen: %s\n", event.LastTimestamp.Format("2006-01-02 15:04:05"))
 	fmt.Printf("Message: %s\n", event.Message)
 	fmt.Println("---")
-}
-
-// Contains checks if a string contains a substring
-func Contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
-		(findSubstring(s, substr) != -1))
-}
-
-// findSubstring finds the index of a substring in a string
-func findSubstring(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }

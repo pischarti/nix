@@ -1,13 +1,10 @@
 package k8s
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 
 	"github.com/spf13/viper"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -41,19 +38,4 @@ func NewClient() (*Client, error) {
 	}
 
 	return &Client{Clientset: clientset}, nil
-}
-
-// EventQueryOptions contains options for querying events
-type EventQueryOptions struct {
-	Namespace string
-}
-
-// QueryEvents retrieves Kubernetes events based on the provided options
-func (c *Client) QueryEvents(ctx context.Context, opts EventQueryOptions) ([]corev1.Event, error) {
-	eventList, err := c.Clientset.CoreV1().Events(opts.Namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list events: %w", err)
-	}
-
-	return eventList.Items, nil
 }

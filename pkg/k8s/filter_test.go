@@ -1,10 +1,9 @@
-package event
+package k8s
 
 import (
 	"testing"
 	"time"
 
-	"github.com/pischarti/nix/pkg/k8s"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -116,7 +115,7 @@ func TestFilterEvents(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := k8s.FilterEvents(tt.events, tt.searchTerm)
+			result := FilterEvents(tt.events, tt.searchTerm)
 
 			if len(result) != tt.expectedCount {
 				t.Errorf("FilterEvents() returned %d events, want %d", len(result), tt.expectedCount)
@@ -138,7 +137,7 @@ func TestFilterEvents(t *testing.T) {
 
 func TestFilterEvents_EmptyList(t *testing.T) {
 	events := []corev1.Event{}
-	result := k8s.FilterEvents(events, "test")
+	result := FilterEvents(events, "test")
 
 	if len(result) != 0 {
 		t.Errorf("FilterEvents() on empty list returned %d events, want 0", len(result))
@@ -186,7 +185,7 @@ func TestFilterEvents_RealWorldExample(t *testing.T) {
 
 	// This is the real-world use case: filtering for sandbox image issues
 	searchTerm := "failed to get sandbox image"
-	result := k8s.FilterEvents(events, searchTerm)
+	result := FilterEvents(events, searchTerm)
 
 	if len(result) != 1 {
 		t.Errorf("Expected 1 event matching %q, got %d", searchTerm, len(result))
@@ -199,5 +198,66 @@ func TestFilterEvents_RealWorldExample(t *testing.T) {
 		if result[0].Reason != "FailedCreatePodSandBox" {
 			t.Errorf("Expected reason 'FailedCreatePodSandBox', got %q", result[0].Reason)
 		}
+	}
+}
+
+func TestContains(t *testing.T) {
+	tests := []struct {
+		name     string
+		str      string
+		substr   string
+		expected bool
+	}{
+		{
+			name:     "exact match",
+			str:      "hello",
+			substr:   "hello",
+			expected: true,
+		},
+		{
+			name:     "substring at start",
+			str:      "hello world",
+			substr:   "hello",
+			expected: true,
+		},
+		{
+			name:     "substring in middle",
+			str:      "hello world",
+			substr:   "lo wo",
+			expected: true,
+		},
+		{
+			name:     "substring at end",
+			str:      "hello world",
+			substr:   "world",
+			expected: true,
+		},
+		{
+			name:     "substring not found",
+			str:      "hello world",
+			substr:   "goodbye",
+			expected: false,
+		},
+		{
+			name:     "empty substring",
+			str:      "hello",
+			substr:   "",
+			expected: true,
+		},
+		{
+			name:     "substring longer than string",
+			str:      "hi",
+			substr:   "hello",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := contains(tt.str, tt.substr)
+			if result != tt.expected {
+				t.Errorf("contains(%q, %q) = %v, want %v", tt.str, tt.substr, result, tt.expected)
+			}
+		})
 	}
 }
