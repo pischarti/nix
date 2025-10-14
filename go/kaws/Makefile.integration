@@ -1,0 +1,105 @@
+# Integration Test Makefile for kaws operator
+
+.PHONY: help test-integration test-integration-setup test-integration-teardown localstack-start localstack-stop
+
+help: ## Show this help
+	@echo "Integration Test Commands:"
+	@echo "  make test-integration          - Run all integration tests"
+	@echo "  make test-integration-setup    - Setup test environment (localstack + kind)"
+	@echo "  make test-integration-teardown - Cleanup test environment"
+	@echo "  make localstack-start          - Start localstack container"
+	@echo "  make localstack-stop           - Stop localstack container"
+
+## Localstack Management
+
+localstack-start: ## Start localstack container for AWS mocking
+	@echo "🚀 Starting localstack..."
+	@docker run -d \
+		--name kaws-localstack \
+		-p 4566:4566 \
+		-e SERVICES=ec2,autoscaling,eks \
+		-e DEBUG=1 \
+		-e EAGER_SERVICE_LOADING=1 \
+		localstack/localstack || echo "Localstack already running"
+	@echo "⏳ Waiting for localstack to be ready..."
+	@for i in $$(seq 1 60); do \
+		if curl -s http://localhost:4566/_localstack/health 2>/dev/null | grep -q "running"; then \
+			echo " ✓"; \
+			break; \
+		fi; \
+		echo -n "."; \
+		sleep 1; \
+	done
+	@echo "✅ Localstack is ready at http://localhost:4566"
+
+localstack-stop: ## Stop and remove localstack container
+	@echo "🛑 Stopping localstack..."
+	@docker stop kaws-localstack 2>/dev/null || true
+	@docker rm kaws-localstack 2>/dev/null || true
+	@echo "✅ Localstack stopped"
+
+localstack-logs: ## Show localstack logs
+	@docker logs -f kaws-localstack
+
+## Integration Test Setup
+
+test-integration-setup: localstack-start ## Setup complete test environment
+	@echo "🔧 Setting up integration test environment..."
+	@echo "   ✓ Localstack running"
+	@echo "   ✓ Kind cluster will be created by tests"
+	@echo "✅ Test environment ready"
+
+test-integration-teardown: localstack-stop ## Cleanup test environment
+	@echo "🧹 Cleaning up test environment..."
+	@kind delete cluster --name kaws-test 2>/dev/null || true
+	@echo "✅ Test environment cleaned up"
+
+## Running Tests
+
+test-integration: test-integration-setup ## Run integration tests
+	@echo "🧪 Running integration tests..."
+	@go test -v -tags=integration -timeout 15m ./cmd/operator/ || ($(MAKE) -f Makefile.integration test-integration-teardown && exit 1)
+	@echo "✅ Integration tests completed"
+	@$(MAKE) -f Makefile.integration test-integration-teardown
+
+test-integration-quick: ## Run integration tests without setup/teardown (assumes env is ready)
+	@echo "🧪 Running integration tests (quick mode)..."
+	@go test -v -tags=integration -timeout 15m ./cmd/operator/
+
+test-integration-verbose: test-integration-setup ## Run integration tests with verbose output
+	@echo "🧪 Running integration tests (verbose)..."
+	@go test -v -tags=integration -timeout 15m ./cmd/operator/ 2>&1 | tee integration-test.log
+	@$(MAKE) -f Makefile.integration test-integration-teardown
+
+test-integration-specific: test-integration-setup ## Run specific integration test (set TEST_NAME=...)
+	@echo "🧪 Running integration test: $(TEST_NAME)"
+	@go test -v -tags=integration -timeout 15m -run "$(TEST_NAME)" ./cmd/operator/
+	@$(MAKE) -f Makefile.integration test-integration-teardown
+
+## Development Helpers
+
+test-integration-debug: localstack-start ## Start environment and keep it running for debugging
+	@echo "🔍 Debug mode - environment will stay running"
+	@echo "   Localstack: http://localhost:4566"
+	@echo "   Run tests with: cd go/kaws && go test -v -tags=integration ./cmd/operator/"
+	@echo "   Cleanup with: make test-integration-teardown"
+
+test-integration-check: ## Check if test environment is ready
+	@echo "🔍 Checking test environment..."
+	@echo -n "   Docker: "
+	@docker ps >/dev/null 2>&1 && echo "✓" || echo "✗ (not running)"
+	@echo -n "   Kind: "
+	@which kind >/dev/null 2>&1 && echo "✓" || echo "✗ (not installed)"
+	@echo -n "   Localstack: "
+	@curl -s http://localhost:4566/_localstack/health >/dev/null 2>&1 && echo "✓" || echo "✗ (not running)"
+	@echo -n "   Kind cluster: "
+	@kind get clusters 2>/dev/null | grep -q kaws-test && echo "✓" || echo "✗ (not created)"
+
+## CI/CD Helpers
+
+ci-test-integration: ## Run integration tests in CI environment
+	@echo "🤖 Running integration tests in CI mode..."
+	@$(MAKE) -f Makefile.integration test-integration-setup
+	@go test -v -tags=integration -timeout 15m ./cmd/operator/ -json | tee integration-test.json
+	@$(MAKE) -f Makefile.integration test-integration-teardown
+
