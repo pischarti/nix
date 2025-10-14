@@ -237,6 +237,82 @@ This command is particularly useful for:
 - Correlating pod problems with underlying AWS infrastructure
 - Planning node group updates or replacements
 
+#### `aws ng-recycle`
+
+Recycles (restarts) EKS node groups by scaling them down to zero, waiting for all instances to terminate, then scaling back up to the original configuration. This is useful for:
+- Recovering from container runtime issues (like "failed to get sandbox image")
+- Forcing fresh instances to fix persistent node problems
+- Clearing stuck containers or zombie processes
+- Applying underlying OS or runtime updates
+
+**Flags:**
+- `-r, --region`: AWS region (default: from AWS config)
+- `-p, --poll-interval`: Polling interval for status checks (default: 15s)
+- `--timeout`: Maximum time to wait for recycle to complete (default: 20m)
+
+**Examples:**
+
+Recycle a single node group:
+```bash
+./kaws aws ng-recycle ng-workers-1
+```
+
+Recycle multiple node groups:
+```bash
+./kaws aws ng-recycle ng-workers-1 ng-workers-2
+```
+
+With custom polling and region:
+```bash
+./kaws aws ng-recycle ng-workers-1 --region us-west-2 --poll-interval 10s
+```
+
+**Example output:**
+```
+=== Recycling node group: ng-workers-1 ===
+
+[1/5] Getting current node group configuration...
+  Current config: Min=2, Max=10, Desired=5
+  Current instances: 5
+
+[2/5] Scaling down to zero...
+  Scaled to Min=0, Max=0, Desired=0
+
+[3/5] Waiting for instances to terminate...
+  [15s] Instance states: map[shutting-down:3 terminated:2]
+  [30s] Instance states: map[terminated:5]
+  All instances terminated
+
+[4/5] Scaling back up to original configuration...
+  Scaled to Min=2, Max=10, Desired=5
+
+[5/5] Waiting for new instances to start...
+  [15s] Waiting for instances to appear: 2/5
+  [30s] Instances: 5/5, States: map[pending:5]
+  5 instances are now starting (pending/running)
+
+✓ Successfully recycled node group: ng-workers-1
+```
+
+**Complete Workflow:**
+
+Identify problem → Find node group → Recycle:
+```bash
+# Step 1: Find events with instance IDs
+./kaws kube event --search "failed to get sandbox image" --show-instance-id
+
+# Step 2: Find which node groups have the problem
+./kaws aws ngs i-1234567890abcdef0
+
+# Step 3: Recycle the problematic node group
+./kaws aws ng-recycle ng-workers-1 --verbose
+```
+
+**⚠️ Warning:** This command will temporarily reduce node group capacity to zero. Ensure you have:
+- Multiple node groups for redundancy
+- Pod disruption budgets configured
+- Tested in non-production first
+
 ## Development
 
 This CLI is built using the following packages:
@@ -254,9 +330,11 @@ nix/
 │   ├── main.go                      # Entry point, root command setup (70 lines)
 │   ├── cmd/
 │   │   ├── aws/
-│   │   │   ├── aws.go               # AWS command setup (20 lines)
-│   │   │   └── ngs/
-│   │   │       └── ngs.go           # Node groups subcommand (119 lines)
+│   │   │   ├── aws.go               # AWS command setup (22 lines)
+│   │   │   ├── ngs/
+│   │   │   │   └── ngs.go           # Node groups lookup (119 lines)
+│   │   │   └── ngrecycle/
+│   │   │       └── ngrecycle.go     # Node group recycle (360 lines)
 │   │   └── kube/
 │   │       ├── kube.go              # Kube command setup (20 lines)
 │   │       └── event/

@@ -4,8 +4,8 @@ go 1.25.1
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.28.0
+	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.59.3
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.0
-	github.com/aws/aws-sdk-go-v2/service/eks v1.74.2
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/pischarti/nix v0.0.0
 	github.com/spf13/cobra v1.8.1
