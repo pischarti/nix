@@ -26,6 +26,11 @@
               lolcat
               git
                         
+              zarf
+              kubernetes-helm
+              fluxcd
+              kustomize_4
+              
               nodejs
               pnpm_8
               supabase-cli
