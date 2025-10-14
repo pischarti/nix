@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/pischarti/nix/pkg/k8s"
 	"github.com/pischarti/nix/pkg/print"
@@ -24,12 +25,16 @@ func NewEventCmd() *cobra.Command {
   kaws kube event --search "ImagePullBackOff" --namespace default
   
   # Output in YAML format
-  kaws kube event --search "error" --output yaml`,
+  kaws kube event --search "error" --output yaml
+  
+  # Include EC2 instance IDs
+  kaws kube event --search "failed to get sandbox image" --show-instance-id`,
 	}
 
 	// Add event-specific flags
 	cmd.Flags().StringP("search", "s", "", "search term to filter events (required)")
 	cmd.Flags().StringP("output", "o", "table", "output format: table or yaml")
+	cmd.Flags().Bool("show-instance-id", false, "include EC2 instance IDs from node labels")
 	cmd.MarkFlagRequired("search")
 
 	return cmd
@@ -51,6 +56,12 @@ func runEvent(cmd *cobra.Command, args []string) error {
 	outputFormat, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return fmt.Errorf("failed to get output flag: %w", err)
+	}
+
+	// Get show-instance-id flag
+	showInstanceID, err := cmd.Flags().GetBool("show-instance-id")
+	if err != nil {
+		return fmt.Errorf("failed to get show-instance-id flag: %w", err)
 	}
 
 	// Get Kubernetes client
@@ -85,13 +96,32 @@ func runEvent(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Display based on output format
+	// Enrich events with node information (and optionally EC2 instance IDs)
+	enrichedEvents, err := client.EnrichEventsWithNodeInfo(context.Background(), matchingEvents, showInstanceID)
+	if err != nil {
+		// If we can't get node info, fall back to basic display
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Warning: Could not fetch node information: %v\n", err)
+		}
+		switch outputFormat {
+		case "yaml":
+			return print.EventsYAML(matchingEvents)
+		case "table":
+			fmt.Printf("Found %d event(s) matching %q:\n\n", len(matchingEvents), searchTerm)
+			print.EventsTable(matchingEvents)
+			return nil
+		default:
+			return fmt.Errorf("unsupported output format: %s (supported: table, yaml)", outputFormat)
+		}
+	}
+
+	// Display based on output format with node information
 	switch outputFormat {
 	case "yaml":
 		return print.EventsYAML(matchingEvents)
 	case "table":
 		fmt.Printf("Found %d event(s) matching %q:\n\n", len(matchingEvents), searchTerm)
-		print.EventsTable(matchingEvents)
+		print.EventsTableWithNodes(enrichedEvents)
 		return nil
 	default:
 		return fmt.Errorf("unsupported output format: %s (supported: table, yaml)", outputFormat)

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/pischarti/nix/pkg/k8s"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -46,6 +47,103 @@ func EventsTable(events []corev1.Event) {
 			lastSeen,
 			message,
 		})
+	}
+
+	t.Render()
+}
+
+// EventsTableWithNodes prints events with node information in a formatted table
+func EventsTableWithNodes(enrichedEvents []k8s.EventWithNode) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleLight)
+
+	// Check if any event has instance ID to determine if we should show that column
+	hasInstanceID := false
+	for _, enriched := range enrichedEvents {
+		if enriched.InstanceID != "" {
+			hasInstanceID = true
+			break
+		}
+	}
+
+	// Set table headers - include Instance ID column if any event has it
+	if hasInstanceID {
+		t.AppendHeader(table.Row{
+			"Namespace",
+			"Type",
+			"Reason",
+			"Object",
+			"Node",
+			"Instance ID",
+			"Count",
+			"Last Seen",
+			"Message",
+		})
+	} else {
+		t.AppendHeader(table.Row{
+			"Namespace",
+			"Type",
+			"Reason",
+			"Object",
+			"Node",
+			"Count",
+			"Last Seen",
+			"Message",
+		})
+	}
+
+	// Add rows for each event
+	for _, enriched := range enrichedEvents {
+		event := enriched.Event
+		objectRef := fmt.Sprintf("%s/%s", event.InvolvedObject.Kind, event.InvolvedObject.Name)
+		lastSeen := event.LastTimestamp.Format("2006-01-02 15:04:05")
+
+		// Truncate message if too long (shorter if we have instance ID column)
+		message := event.Message
+		maxLen := 70
+		if hasInstanceID {
+			maxLen = 60
+		}
+		if len(message) > maxLen {
+			message = message[:maxLen-3] + "..."
+		}
+
+		// Display node name or "-" if not a pod event
+		nodeName := enriched.NodeName
+		if nodeName == "" {
+			nodeName = "-"
+		}
+
+		if hasInstanceID {
+			instanceID := enriched.InstanceID
+			if instanceID == "" {
+				instanceID = "-"
+			}
+
+			t.AppendRow(table.Row{
+				event.Namespace,
+				event.Type,
+				event.Reason,
+				objectRef,
+				nodeName,
+				instanceID,
+				event.Count,
+				lastSeen,
+				message,
+			})
+		} else {
+			t.AppendRow(table.Row{
+				event.Namespace,
+				event.Type,
+				event.Reason,
+				objectRef,
+				nodeName,
+				event.Count,
+				lastSeen,
+				message,
+			})
+		}
 	}
 
 	t.Render()

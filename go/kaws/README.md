@@ -80,11 +80,12 @@ Parent command for all Kubernetes-related operations.
 
 #### `kube event`
 
-Queries Kubernetes events across all namespaces (or a specific namespace) and filters them by message content. This is useful for troubleshooting various Kubernetes issues by searching for specific error messages or patterns.
+Queries Kubernetes events across all namespaces (or a specific namespace) and filters them by message content. For pod-related events, the command automatically enriches the output with node information, showing which node the pod is scheduled on. This is useful for troubleshooting various Kubernetes issues by searching for specific error messages or patterns and identifying node-specific problems.
 
 **Flags:**
 - `-s, --search`: Search term to filter events (required)
 - `-o, --output`: Output format: `table` or `yaml` (default: `table`)
+- `--show-instance-id`: Include EC2 instance IDs from node labels (useful for AWS EKS clusters)
 - `-n, --namespace`: Specify a namespace to query (default: all namespaces)
 - `-k, --kubeconfig`: Path to kubeconfig file (default: `$HOME/.kube/config`)
 - `-v, --verbose`: Enable verbose output
@@ -111,19 +112,30 @@ Output in YAML format:
 ./kaws kube event --search "ImagePullBackOff" --output yaml
 ```
 
-**Example output (table format):**
+Include EC2 instance IDs (useful for EKS troubleshooting):
+```bash
+./kaws kube event --search "failed to get sandbox image" --show-instance-id
+```
+
+**Example output (table format with node names):**
 ```
 Found 2 event(s) matching "failed to get sandbox image":
 
-┌───────────┬─────────┬───────────────────────┬──────────────┬───────┬─────────────────────┬─────────────────────────────────────────────────────────────────────────────────┐
-│ Namespace │ Type    │ Reason                │ Object       │ Count │ Last Seen           │ Message                                                                         │
-├───────────┼─────────┼───────────────────────┼──────────────┼───────┼─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
-│ default   │ Warning │ FailedCreatePodSandBox│ Pod/my-pod   │     5 │ 2024-10-14 10:35:00 │ Failed to create pod sandbox: rpc error: code = Unknown desc = failed to ge... │
-│ default   │ Warning │ FailedCreatePodSandBox│ Pod/my-app   │     3 │ 2024-10-14 10:32:00 │ Failed to create pod sandbox: rpc error: code = Unknown desc = failed to ge... │
-└───────────┴─────────┴───────────────────────┴──────────────┴───────┴─────────────────────┴─────────────────────────────────────────────────────────────────────────────────┘
+┌───────────┬─────────┬───────────────────────┬──────────────┬──────────────────┬───────┬─────────────────────┬──────────────────────────────────────────────────────────────────┐
+│ Namespace │ Type    │ Reason                │ Object       │ Node             │ Count │ Last Seen           │ Message                                                          │
+├───────────┼─────────┼───────────────────────┼──────────────┼──────────────────┼───────┼─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ default   │ Warning │ FailedCreatePodSandBox│ Pod/my-pod   │ ip-10-0-1-50.ec2 │     5 │ 2024-10-14 10:35:00 │ Failed to create pod sandbox: rpc error: code = Unknown desc... │
+│ default   │ Warning │ FailedCreatePodSandBox│ Pod/my-app   │ ip-10-0-1-51.ec2 │     3 │ 2024-10-14 10:32:00 │ Failed to create pod sandbox: rpc error: code = Unknown desc... │
+└───────────┴─────────┴───────────────────────┴──────────────┴──────────────────┴───────┴─────────────────────┴──────────────────────────────────────────────────────────────────┘
 ```
 
-The output is formatted as a clean table using [go-pretty](https://github.com/jedib0t/go-pretty), making it easy to scan multiple events at once.
+The output is formatted as a clean table using [go-pretty](https://github.com/jedib0t/go-pretty), making it easy to scan multiple events at once. **For pod-related events, the table includes the node name** where the pod is (or was) scheduled, making it easier to identify node-specific issues.
+
+When using the `--show-instance-id` flag, the table includes an additional column showing the EC2 instance ID for each node. This is particularly useful for:
+- Correlating Kubernetes events with AWS EC2 instance metrics
+- Identifying problematic EC2 instances in EKS clusters
+- Facilitating AWS CloudWatch log searches by instance ID
+- Cross-referencing with AWS Systems Manager or CloudWatch dashboards
 
 **Example output (YAML format):**
 ```yaml
