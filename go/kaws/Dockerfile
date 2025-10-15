@@ -1,14 +1,20 @@
 # Build stage
 FROM golang:1.25-alpine AS builder
 
+# Note: This Dockerfile must be built from the repository root:
+# docker build -f go/kaws/Dockerfile -t kaws-operator:latest .
+
 WORKDIR /workspace
 
-# Copy go mod files
+# Copy monorepo structure to handle replace directives
 COPY go.mod go.sum ./
-RUN go mod download
+COPY pkg ./pkg
+COPY go/kaws ./go/kaws
 
-# Copy source code
-COPY . .
+WORKDIR /workspace/go/kaws
+
+# Download dependencies (replace directive now works)
+RUN go mod download
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o kaws main.go
@@ -19,7 +25,7 @@ FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 
 # Copy binary from builder
-COPY --from=builder /workspace/kaws .
+COPY --from=builder /workspace/go/kaws/kaws .
 
 USER 65532:65532
 
