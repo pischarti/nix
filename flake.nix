@@ -30,6 +30,7 @@
               kubernetes-helm
               fluxcd
               kustomize_4
+              kubebuilder
               
               nodejs
               pnpm_8
